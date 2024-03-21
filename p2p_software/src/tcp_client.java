@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Random;
-public class tcp_sender {
+public class tcp_client {
 
         public static void main(String args[])
         {
