@@ -1,69 +1,132 @@
 import java.net.*;
 import java.io.*;
 import java.nio.file.Files;
+// Contains the "server" capabilities of a peer (uploading files to other peers)
 
 public class tcp_server
 {
 
-    public static void main(String args[])
-    {
-        // hard coded port
-        int port = 1664;
+    public int port;
+    public int serverID;
+    ObjectInputStream socketInput;
+    ObjectOutputStream socketOutput;
+    ServerSocket server;
+    Socket socket;
 
-        // launches the server on the given platform with the hard coded port
+    public tcp_server(int port, int id){
+        this.port = port;
+        this.serverID = id;
+    }
+
+    public void launchServer(){
         try
         {
-            ServerSocket server = new ServerSocket(port);
+            this.server = new ServerSocket(port);
             InetAddress local = InetAddress.getLocalHost();
             System.out.println("TCP Server has been launched with port " + port);
-            System.out.println("and IP " + local.getHostAddress());
+            System.out.println("and IP " + local.getHostAddress() + "on peer " + serverID);
 
             // program stops here until a client issues a connection request
-            Socket socket = server.accept();
+            this.socket = server.accept();
             System.out.println("Incoming connection detected from client");
 
             // takes input from the client socket
-            ObjectInputStream socketInput = new ObjectInputStream((socket.getInputStream()));
-            ObjectOutputStream socketOutput = new ObjectOutputStream(socket.getOutputStream());
-            String message = "x";
-
-            while (true)
-            {
-                try
-                {
-                    message = (String)socketInput.readObject();
-                    if (message.equals("Bye")){
-                        break;
-                    }
-                    System.out.println(message);
-                    socketOutput.writeObject("Received");
-                    socketOutput.flush();
-                }
-                catch(Exception e)
-                {
-                    System.out.println("Error in reading!");
-                    throw new RuntimeException(e);
-                }
-            }
-            try {
-                sendFile("gator.png", socketOutput);
-            } catch(Exception e)
-            {
-                System.out.println("Error in reading!");
-                throw new RuntimeException(e);
-            }
-            // terminate the connection
-            System.out.println("See you later client! Closing connection");
-            socketInput.close();
-            socketOutput.close();
-            socket.close();
-        }
-
-        catch(IOException i)
+            this.socketInput = new ObjectInputStream((socket.getInputStream()));
+            this.socketOutput = new ObjectOutputStream(socket.getOutputStream());
+        } catch(IOException i)
         {
             System.out.println("Error in connection with client or input detection");
             throw new RuntimeException(i);
         }
+    }
+
+    public void communicate(){
+        String message = "";
+        while (true)
+        {
+            try
+            {
+                message = (String)socketInput.readObject();
+                if (message.equals("Bye")){
+                    break;
+                }
+                System.out.println(message + " - message received by peer " + serverID);
+                socketOutput.writeObject("Demo Message");
+                socketOutput.flush();
+            }
+            catch(Exception e)
+            {
+                System.out.println("Error in reading!");
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void closeServer() throws IOException {
+        System.out.println("See you later client! Closing connection");
+        socketInput.close();
+        socketOutput.close();
+        socket.close();
+    }
+    public static void main(String args[])
+    {
+//        // hard coded port
+//        int port = 1664;
+//
+//        // launches the server on the given platform with the hard coded port
+//        try
+//        {
+//            ServerSocket server = new ServerSocket(port);
+//            InetAddress local = InetAddress.getLocalHost();
+//            System.out.println("TCP Server has been launched with port " + port);
+//            System.out.println("and IP " + local.getHostAddress());
+//
+//            // program stops here until a client issues a connection request
+//            Socket socket = server.accept();
+//            System.out.println("Incoming connection detected from client");
+//
+//            // takes input from the client socket
+//            ObjectInputStream socketInput = new ObjectInputStream((socket.getInputStream()));
+//            ObjectOutputStream socketOutput = new ObjectOutputStream(socket.getOutputStream());
+//            String message = "x";
+//
+//            while (true)
+//            {
+//                try
+//                {
+//                    message = (String)socketInput.readObject();
+//                    if (message.equals("Bye")){
+//                        break;
+//                    }
+//                    System.out.println(message);
+//                    socketOutput.writeObject("Received");
+//                    socketOutput.flush();
+//                }
+//                catch(Exception e)
+//                {
+//                    System.out.println("Error in reading!");
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//            try {
+//                sendFile("gator.png", socketOutput);
+//            } catch(Exception e)
+//            {
+//                System.out.println("Error in reading!");
+//                throw new RuntimeException(e);
+//            }
+//            // terminate the connection
+//            System.out.println("See you later client! Closing connection");
+//            socketInput.close();
+//            socketOutput.close();
+//            socket.close();
+//        }
+//
+//        catch(IOException i)
+//        {
+//            System.out.println("Error in connection with client or input detection");
+//            throw new RuntimeException(i);
+//        }
     }
 
     // method which takes a file name and sends it from the server to the client requesting that file

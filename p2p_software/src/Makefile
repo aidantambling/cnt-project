@@ -11,6 +11,14 @@ TCP_Client.class: TCP_Client.java
 TCP_Server.class: TCP_Server.java
 	javac TCP_Server.java
 
+# Compile the TCP peer
+Peer.class: Peer.java
+	javac Peer.java
+
+# Compile the TCP peer
+PeerDeployment.class: PeerDeployment.java
+	javac PeerDeployment.java
+
 # Clean the build
 clean:
 	rm -f *.class
