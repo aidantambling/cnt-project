@@ -41,6 +41,17 @@ public class tcp_server
         }
     }
 
+    public void sendMessage(String message, Socket socket){
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush();
+            out.writeObject(message);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public void communicate(){
         String message = "";
         while (true)
@@ -52,7 +63,7 @@ public class tcp_server
                     break;
                 }
                 System.out.println(message + " - message received by peer " + serverID);
-                socketOutput.writeObject("Demo Message");
+                sendMessage("Demo Message", this.socket);
                 socketOutput.flush();
             }
             catch(Exception e)

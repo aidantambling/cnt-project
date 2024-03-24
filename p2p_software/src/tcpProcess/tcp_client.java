@@ -12,6 +12,8 @@ public class tcp_client {
         BufferedReader consoleInput; // read input from the command line
         ObjectOutputStream socketOutput; // write to the socket
         ObjectInputStream socketInput; // read from the socket
+
+        ArrayList<Socket> sockets;
         Socket requestSocket;
         public tcp_client(int port, int id){
             this.port = port;
@@ -45,11 +47,22 @@ public class tcp_client {
             }
         }
 
-        public void sendCommunication(){
+    public void sendMessage(String message, Socket socket){
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush();
+            out.writeObject(message);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendCommunication(){
             String message;
             while (true){
                 try {
                     message = consoleInput.readLine();
+                    sendMessage(message, this.requestSocket);
                     socketOutput.writeObject(message);
                     socketOutput.flush();
                     if (message.equals("Bye")){
