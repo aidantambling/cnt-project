@@ -30,6 +30,7 @@ public class tcp_server
             // program stops here until a client issues a connection request
             this.socket = server.accept();
             System.out.println("Incoming connection detected from client");
+            sendHandshake(this.socket);
 
             // takes input from the client socket
             this.socketInput = new ObjectInputStream((socket.getInputStream()));
@@ -41,7 +42,12 @@ public class tcp_server
         }
     }
 
-    public void sendMessage(String message, Socket socket){
+    public void sendHandshake(Socket socket){
+        String tempHandshake = "Handshake from server"; // will replace with an actual handshake message later
+        sendMessage(tempHandshake, socket);
+    }
+
+    public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
         try {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();

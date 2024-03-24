@@ -7,47 +7,55 @@ import java.util.Random;
 
 // Contains the "client" capabilities of a peer (requesting / downloading files from other peers)
 public class tcp_client {
-        int port;
-        public int clientID;
-        BufferedReader consoleInput; // read input from the command line
-        ObjectOutputStream socketOutput; // write to the socket
-        ObjectInputStream socketInput; // read from the socket
+    int port;
+    public int clientID;
+    BufferedReader consoleInput; // read input from the command line
+    ObjectOutputStream socketOutput; // write to the socket
+    ObjectInputStream socketInput; // read from the socket
 
-        ArrayList<Socket> sockets;
-        Socket requestSocket;
-        public tcp_client(int port, int id){
-            this.port = port;
-            this.clientID = id;
+    ArrayList<Socket> sockets;
+    Socket requestSocket;
+    public tcp_client(int port, int id){
+        this.port = port;
+        this.clientID = id;
+    }
+
+    public void requestServer(String address){
+        InetAddress IP;
+        try {
+            IP = InetAddress.getByName(address);
+        } catch (UnknownHostException e) {
+            System.out.println("Error: IP address could not be resolved from the hostname");
+            throw new RuntimeException(e);
         }
+        try {
+            this.requestSocket = new Socket(IP, 1664);
+            System.out.println("Client-side socket established by peer " + clientID);
+            System.out.println("Hostname: " + address);
+            System.out.println("Address: " + IP.getHostAddress());
+            System.out.println("Port: " + 1664);
 
-        public void requestServer(String address){
-            InetAddress IP;
-            try {
-                IP = InetAddress.getByName(address);
-            } catch (UnknownHostException e) {
-                System.out.println("Error: IP address could not be resolved from the hostname");
-                throw new RuntimeException(e);
-            }
-            try {
-                this.requestSocket = new Socket(IP, 1664);
-                System.out.println("Client-side socket established by peer " + clientID);
-                System.out.println("Hostname: " + address);
-                System.out.println("Address: " + IP.getHostAddress());
-                System.out.println("Port: " + 1664);
-
-                // input is taken in from the console
-                this.consoleInput = new BufferedReader(new InputStreamReader(System.in));
-                // output from the socket is sent to the server socket for reading
-                this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
-                this.socketOutput.flush();
-                this.socketInput = new ObjectInputStream((this.requestSocket.getInputStream()));
-            } catch (Exception e){
-                System.out.println("Error in establishing a socket connection!");
-                throw new RuntimeException(e);
-            }
+            // input is taken in from the console
+            this.consoleInput = new BufferedReader(new InputStreamReader(System.in));
+            // output from the socket is sent to the server socket for reading
+            this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
+            this.socketOutput.flush();
+            this.socketInput = new ObjectInputStream((this.requestSocket.getInputStream()));
+        } catch (Exception e){
+            System.out.println("Error in establishing a socket connection!");
+            throw new RuntimeException(e);
         }
+        // send handshake
+        sendHandshake(requestSocket);
+        // receive handshake
+    }
 
-    public void sendMessage(String message, Socket socket){
+    public void sendHandshake(Socket socket){
+        String tempHandshake = "Handshake from client"; // will replace with an actual handshake message later
+        sendMessage(tempHandshake, socket);
+    }
+
+    public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
         try {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
@@ -58,40 +66,40 @@ public class tcp_client {
     }
 
     public void sendCommunication(){
-            String message;
-            while (true){
-                try {
-                    message = consoleInput.readLine();
-                    sendMessage(message, this.requestSocket);
-                    socketOutput.writeObject(message);
-                    socketOutput.flush();
-                    if (message.equals("Bye")){
-                        break;
-                    }
-                    message = (String)socketInput.readObject();
-                    System.out.println(message + " - received by peer " + clientID);
-                } catch (IOException | ClassNotFoundException e) {
-                    System.out.println("Error in writing simple message");
-                }
-            }
-        }
-
-        public void closeClient(){
-            // terminate the connection
-            System.out.println("Goodbye server! Closing connection.");
+        String message;
+        while (true){
             try {
-                socketOutput.close();
-                socketInput.close();
-                requestSocket.close();
-            }
-            catch (IOException e) {
-                System.out.println("Error in disconnecting the client-server interface!");
-                throw new RuntimeException(e);
+                message = consoleInput.readLine();
+                sendMessage(message, this.requestSocket);
+                socketOutput.writeObject(message);
+                socketOutput.flush();
+                if (message.equals("Bye")){
+                    break;
+                }
+                message = (String)socketInput.readObject();
+                System.out.println(message + " - received by peer " + clientID);
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("Error in writing simple message");
             }
         }
+    }
 
-        public static void main(String args[])
-        {
+    public void closeClient(){
+        // terminate the connection
+        System.out.println("Goodbye server! Closing connection.");
+        try {
+            socketOutput.close();
+            socketInput.close();
+            requestSocket.close();
+        }
+        catch (IOException e) {
+            System.out.println("Error in disconnecting the client-server interface!");
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void main(String args[])
+    {
 //            // hard coded port of process
 //            int port = 1664;
 //
