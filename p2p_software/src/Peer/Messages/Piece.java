@@ -1,34 +1,25 @@
 package Peer.Messages;
 
-public class Piece {
-    private int pieceIndex; // Index of the piece being sent
-    private byte[] pieceData; // Data of the piece being sent
+public class Piece implements Message {
+    private static final byte MESSAGE_TYPE = 7;
+    private int pieceIndex;
+    private byte[] pieceData;
 
-    // Constructor
     public Piece(int pieceIndex, byte[] pieceData) {
         this.pieceIndex = pieceIndex;
         this.pieceData = pieceData;
     }
 
-    // Getter for pieceIndex
-    public int getPieceIndex() {
-        return pieceIndex;
+    @Override
+    public byte[] toBytes() {
+        int length = 5 + pieceData.length;
+        byte[] bytes = new byte[length];
+        bytes[0] = MESSAGE_TYPE;
+        bytes[1] = (byte) (pieceIndex >> 24);
+        bytes[2] = (byte) (pieceIndex >> 16);
+        bytes[3] = (byte) (pieceIndex >> 8);
+        bytes[4] = (byte) pieceIndex;
+        System.arraycopy(pieceData, 0, bytes, 5, pieceData.length);
+        return bytes;
     }
-
-    // Setter for pieceIndex
-    public void setPieceIndex(int pieceIndex) {
-        this.pieceIndex = pieceIndex;
-    }
-
-    // Getter for pieceData
-    public byte[] getPieceData() {
-        return pieceData;
-    }
-
-    // Setter for pieceData
-    public void setPieceData(byte[] pieceData) {
-        this.pieceData = pieceData;
-    }
-
-    // Additional methods or logic related to the Piece message
 }

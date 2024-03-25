@@ -1,12 +1,10 @@
 package Peer.Messages;
 
-public class Unchoke {
-    // No payload for the unchoke message
+public class Unchoke implements Message {
+    private static final byte MESSAGE_TYPE = 1;
 
-    // Constructor
-    public Unchoke() {
-        // No payload to initialize
+    @Override
+    public byte[] toBytes() {
+        return new byte[]{1}; // Unchoke message has no payload, just the message type
     }
-
-    // Additional methods or logic related to the Unchoke message
 }

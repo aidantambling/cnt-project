@@ -1,24 +1,18 @@
 package Peer.Messages;
 
-import java.util.BitSet;
+public class Bitfield implements Message {
+    private static final byte MESSAGE_TYPE = 5;
+    private byte[] bitfield;
 
-public class Bitfield {
-    private BitSet bitfield; // Represents the bitfield indicating which pieces the peer has
-
-    // Constructor
-    public Bitfield(BitSet bitfield) {
+    public Bitfield(byte[] bitfield) {
         this.bitfield = bitfield;
     }
 
-    // Getter for bitfield
-    public BitSet getBitfield() {
-        return bitfield;
+    @Override
+    public byte[] toBytes() {
+        byte[] bytes = new byte[bitfield.length + 1];
+        bytes[0] = MESSAGE_TYPE;
+        System.arraycopy(bitfield, 0, bytes, 1, bitfield.length);
+        return bytes;
     }
-
-    // Setter for bitfield
-    public void setBitfield(BitSet bitfield) {
-        this.bitfield = bitfield;
-    }
-
-    // Additional methods or logic related to the Bitfield message
 }

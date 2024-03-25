@@ -1,12 +1,10 @@
 package Peer.Messages;
 
-public class NotInterested {
-    // No payload for the not interested message
+public class NotInterested implements Message {
+    private static final byte MESSAGE_TYPE = 3;
 
-    // Constructor
-    public NotInterested() {
-        // No payload to initialize
+    @Override
+    public byte[] toBytes() {
+        return new byte[]{3}; // Not interested message has no payload, just the message type
     }
-
-    // Additional methods or logic related to the NotInterested message
 }

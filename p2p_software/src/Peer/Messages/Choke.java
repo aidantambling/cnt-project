@@ -1,12 +1,10 @@
 package Peer.Messages;
 
-public class Choke {
-    // No payload for the choke message
+public class Choke implements Message {
+    private static final byte MESSAGE_TYPE = 0;
 
-    // Constructor
-    public Choke() {
-        // No payload to initialize
+    @Override
+    public byte[] toBytes() {
+        return new byte[]{0}; // Choke message has no payload, just the message type
     }
-
-    // Additional methods or logic related to the Choke message
 }
