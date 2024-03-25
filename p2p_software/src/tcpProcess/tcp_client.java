@@ -52,16 +52,39 @@ public class tcp_client {
 
     public void sendHandshake(Socket socket){
         String tempHandshake = "Handshake from client"; // will replace with an actual handshake message later
-        sendMessage(tempHandshake, socket);
+        if (!tempHandshake.equals("")){
+            sendMessage(tempHandshake, socket);
+        }
     }
 
     public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
+        // socket validation
+        if (socket == null){
+            System.out.println("The message cannot be sent - the socket could not be found");
+            return;
+        }
+        if (socket.isClosed()){
+            System.out.println("The message cannot be sent - the socket is already closed.");
+            return;
+        }
+        // message validation
+        if (message.equals("")){
+            System.out.println("The message is empty - it cannot be sent.");
+            return;
+        }
         try {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
             out.writeObject(message);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (SocketException se) {
+            // potential causes: slow network, firewall, idle connection, or code errors
+            System.out.println("Error was encountered while trying to access the socket");
+        } catch (EOFException eof) {
+            // end of the stream was unexpectedly reached
+            System.out.println("Error was encountered while trying to access the output stream");
+        } catch (IOException e){
+            // most general IO exception handling
+            System.out.println("Error was encountered while trying to manage IO operations");
         }
     }
 
