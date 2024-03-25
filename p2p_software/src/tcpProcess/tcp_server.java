@@ -1,6 +1,7 @@
 package tcpProcess;
 import java.net.*;
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 // Contains the "server" capabilities of a peer (uploading files to other peers)
 
@@ -45,6 +46,40 @@ public class tcp_server
     public void sendHandshake(Socket socket){
         String tempHandshake = "Handshake from server"; // will replace with an actual handshake message later
         sendMessage(tempHandshake, socket);
+    }
+
+    public void readHandshake(byte[] handshakeMessage){
+        // byte buffer to parse the handshake message
+        ByteBuffer handshakeBuffer = ByteBuffer.wrap(handshakeMessage);
+
+        // extract the 18-byte header from the message
+        byte[] headerBytes = new byte[18];
+        handshakeBuffer.get(headerBytes);
+        String header = new String(headerBytes);
+
+        byte[] zeroBytes = new byte[10];
+        handshakeBuffer.get(zeroBytes);
+
+        // Extract the 4-byte peer ID
+        int extractedPeerID = handshakeBuffer.getInt();
+
+        if (!header.equals("P2PFILESHARINGPROJ")){
+            System.out.println("The header does not match the handshake header.");
+            return;
+        }
+        else {
+            System.out.println("Header: " + header);
+        }
+
+        System.out.println("Zero bytes: ");
+        for (byte b : zeroBytes){
+            if (b != 0){
+                System.out.println("A zero byte was transmitted incorrectly.");
+                return;
+            }
+            System.out.print(b);
+        }
+        System.out.println("Peer ID: " + extractedPeerID);
     }
 
     public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
@@ -109,63 +144,7 @@ public class tcp_server
     }
     public static void main(String args[])
     {
-//        // hard coded port
-//        int port = 1664;
-//
-//        // launches the server on the given platform with the hard coded port
-//        try
-//        {
-//            ServerSocket server = new ServerSocket(port);
-//            InetAddress local = InetAddress.getLocalHost();
-//            System.out.println("TCP Server has been launched with port " + port);
-//            System.out.println("and IP " + local.getHostAddress());
-//
-//            // program stops here until a client issues a connection request
-//            Socket socket = server.accept();
-//            System.out.println("Incoming connection detected from client");
-//
-//            // takes input from the client socket
-//            ObjectInputStream socketInput = new ObjectInputStream((socket.getInputStream()));
-//            ObjectOutputStream socketOutput = new ObjectOutputStream(socket.getOutputStream());
-//            String message = "x";
-//
-//            while (true)
-//            {
-//                try
-//                {
-//                    message = (String)socketInput.readObject();
-//                    if (message.equals("Bye")){
-//                        break;
-//                    }
-//                    System.out.println(message);
-//                    socketOutput.writeObject("Received");
-//                    socketOutput.flush();
-//                }
-//                catch(Exception e)
-//                {
-//                    System.out.println("Error in reading!");
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//            try {
-//                sendFile("gator.png", socketOutput);
-//            } catch(Exception e)
-//            {
-//                System.out.println("Error in reading!");
-//                throw new RuntimeException(e);
-//            }
-//            // terminate the connection
-//            System.out.println("See you later client! Closing connection");
-//            socketInput.close();
-//            socketOutput.close();
-//            socket.close();
-//        }
-//
-//        catch(IOException i)
-//        {
-//            System.out.println("Error in connection with client or input detection");
-//            throw new RuntimeException(i);
-//        }
+
     }
 
     // method which takes a file name and sends it from the server to the client requesting that file

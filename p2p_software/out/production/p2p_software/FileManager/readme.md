@@ -1,0 +1,1 @@
+filemanaer folder will hold the class files that parse the config files, and print out the log files
