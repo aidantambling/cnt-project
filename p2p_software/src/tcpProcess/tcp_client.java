@@ -50,10 +50,23 @@ public class tcp_client {
         // send handshake
         sendHandshake(requestSocket);
         // receive handshake
+        boolean handshakeStatus;
+        try {
+            handshakeStatus = readHandshake((byte[]) socketInput.readObject());
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        if (!handshakeStatus){
+            System.out.println("The handshake was unsuccessful.");
+            return;
+        }
+        System.out.println("The handshake was successful.");
+
+        // now, actual messages can be sent.
     }
 
     public void sendHandshake(Socket socket){
-        String tempHandshake = "Handshake from client"; // will replace with an actual handshake message later
+//        String tempHandshake = "Handshake from client"; // will replace with an actual handshake message later
 
         // 32-byte handshake message
         byte[] handshake = new byte[32];
@@ -70,12 +83,10 @@ public class tcp_client {
         buffer.putInt(peerID);
         System.out.println(Arrays.toString(buffer.array()));
 
-        if (!tempHandshake.equals("")){
-            sendMessage(tempHandshake, socket);
-        }
+        sendMessage(buffer.array(), socket);
     }
 
-    public void readHandshake(byte[] handshakeMessage){
+    public boolean readHandshake(byte[] handshakeMessage){
         // byte buffer to parse the handshake message
         ByteBuffer handshakeBuffer = ByteBuffer.wrap(handshakeMessage);
 
@@ -92,7 +103,7 @@ public class tcp_client {
 
         if (!header.equals("P2PFILESHARINGPROJ")){
             System.out.println("The header does not match the handshake header.");
-            return;
+            return false;
         }
         else {
             System.out.println("Header: " + header);
@@ -102,14 +113,15 @@ public class tcp_client {
         for (byte b : zeroBytes){
             if (b != 0){
                 System.out.println("A zero byte was transmitted incorrectly.");
-                return;
+                return false;
             }
             System.out.print(b);
         }
         System.out.println("Peer ID: " + extractedPeerID);
+        return true;
     }
 
-    public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
+    public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
         // socket validation
         if (socket == null){
             System.out.println("The message cannot be sent - the socket could not be found");
@@ -120,7 +132,7 @@ public class tcp_client {
             return;
         }
         // message validation
-        if (message.equals("")){
+        if (message.length == 0){
             System.out.println("The message is empty - it cannot be sent.");
             return;
         }
@@ -145,7 +157,7 @@ public class tcp_client {
         while (true){
             try {
                 message = consoleInput.readLine();
-                sendMessage(message, this.requestSocket);
+//                sendMessage(message, this.requestSocket);
                 socketOutput.writeObject(message);
                 socketOutput.flush();
                 if (message.equals("Bye")){
