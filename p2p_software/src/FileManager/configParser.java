@@ -36,6 +36,7 @@ public class configParser {
         return configMap;
     }
 
+    //file path is hard coded this must be changed later
     public void readFile() throws IOException {
         String filePath = "../Configs/small/common.cfg";
         configMap = parseConfigFile(filePath);
