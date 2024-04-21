@@ -1,14 +1,38 @@
 package FileManager;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class peerInfoParser {
-    private int PeerId;
-    private String HostName;
-    private int port;
-    private boolean hasFile;
+
+    public static class peerInfo {
+        public int PeerId;
+        public String HostName;
+        public int port;
+        public boolean hasFile;
+
+        public int getPeerId () {
+            return PeerId;
+        }
+
+        public String getHostName () {
+            return HostName;
+        }
+
+        public int getPort () {
+            return port;
+        }
+
+        public boolean hasCompleteFile () {
+            return hasFile;
+        }
+    }
+
+    public static ArrayList<peerInfo> peerInfoVector = new ArrayList<peerInfo>();
+
 
     //this function make a map of variables to values
     private void parseConfigFile(String filePath) throws IOException {
@@ -21,10 +45,15 @@ public class peerInfoParser {
                     throw new IOException("Invalid config line: " + line);
                 }
 
-                this.PeerId = Integer.valueOf(parts[0].trim());
-                this.HostName = parts[1].trim();
-                this.port = Integer.valueOf(parts[2]);
-                this.hasFile = Boolean.valueOf(parts[3]);
+                peerInfo peerInfo = new peerInfo();
+                peerInfo.PeerId = Integer.parseInt(parts[0].trim());
+                peerInfo.HostName = parts[1].trim();
+                peerInfo.port = Integer.parseInt(parts[2]);
+                peerInfo.hasFile = Boolean.parseBoolean(parts[3]);
+
+//                System.out.println(peerInfo.PeerId + " " + peerInfo.HostName + " " + peerInfo.port + " " + peerInfo.hasFile);
+
+                peerInfoVector.add(peerInfo);
             }
         }
 
@@ -32,24 +61,7 @@ public class peerInfoParser {
 
     //for now file path is hardcoded this must be changed later
     public void readFile() throws IOException {
-        String filePath = "../Configs/small/peerInfo.cfg";
+        String filePath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "configs" + File.separator + "PeerInfo.cfg";
         parseConfigFile(filePath);
     }
-
-    public int getPeerId () {
-        return PeerId;
-    }
-
-    public String getHostName () {
-        return HostName;
-    }
-
-    public int getPort () {
-        return port;
-    }
-
-    public boolean hasCompleteFile () {
-        return hasFile;
-    }
-
 }

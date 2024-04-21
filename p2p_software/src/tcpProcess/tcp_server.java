@@ -23,10 +23,10 @@ public class tcp_server
     public void launchServer(){
         try
         {
-            this.server = new ServerSocket(port);
+            this.server = new ServerSocket(port); //TODO: get port number from configs
             InetAddress local = InetAddress.getLocalHost();
             System.out.println("TCP Server has been launched with port " + port);
-            System.out.println("and IP " + local.getHostAddress() + "on peer " + serverID);
+            System.out.println("and IP " + local.getHostAddress() + " on peer " + serverID);
 
             // program stops here until a client issues a connection request
             this.socket = server.accept();

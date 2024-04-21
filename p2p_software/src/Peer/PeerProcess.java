@@ -13,6 +13,7 @@ public class PeerProcess {
 
     static peer peer;
     static byte[] fileData;
+    static String directoryPath;
 
     public static void main(String[] args) throws IOException {
         /* General format of the approach:
@@ -27,50 +28,48 @@ public class PeerProcess {
 
         // 1. parse the config files
 
-        // Simulate parsing a configuration 
-        String fileName = "thefile";
-        int fileSize = 167705; 
-        int pieceSize = 16384; 
-        int numberOfPieces = (int) Math.ceil(fileSize / pieceSize);
-
-        //simulate parsing peer configuration
-        int peerId = 1;
-        int port = 7000; 
-        boolean hasCompleteFile = true;
-
         // Parse the .cfg files to get important info abt the peers
         // .readFile() lines commented out - .cfg files not present yet.
         configParser configParser = new configParser();
-//        configParser.readFile();
+        configParser.readFile();
         peerInfoParser peerParser = new peerInfoParser();
-//        peerParser.readFile();
-
-        // peerParser stores the initial state of each peer (.hasFile = true/false?)
-        // assign the file to a peer_100x folder according to that peer's .hasFile value?
-
-        // Initialize data structures 
+        peerParser.readFile();
 
         ArrayList<peer> peers = new ArrayList<peer>();
         byte[] bitField = {0, 0, 0, 0, 0, 0, 0};
 
         // launch the peer we are targeting
-        int inputID = Integer.parseInt(args[0]);
-//        int inputID = 1001;
-        // TODO: check that the input ID is valid
-        // TODO: verify this is a valid # (no parseInt values)
-        // TODO: OK, it is a # - but is it a peer? check the peerMap from configInfo.
+        int peerID = Integer.parseInt(args[0]);
+
+        // grab the relevant information from PeerInfo.cfg
+        String hostname;
+        int port = 0;
+        boolean hasFile = false;
+        for (int i = 0; i < peerInfoParser.peerInfoVector.size(); i++){
+            peerInfoParser.peerInfo p = peerInfoParser.peerInfoVector.get(i);
+            if (peerID == p.getPeerId()){
+                System.out.println("Match found in PeerInfo.cfg - the peerID argument is valid");
+                hostname = p.getHostName();
+                port = p.getPort();
+                hasFile = p.hasCompleteFile();
+                break;
+            }
+            if (i == peerInfoParser.peerInfoVector.size() - 1){
+                System.out.println("A match could not be found in PeerInfo.cfg - the peerID argument is not valid.");
+                return;
+            }
+        }
 
         // Start logger with a dummy message 
-        System.out.println("Starting logger for peer " + peerId);
-
+        System.out.println("Starting logger for peer " + peerID);
 
         // if peer has the file, it will just be a server
-        if (hasCompleteFile) {
-            System.out.println("Peer " + inputID + " with complete file listening on port " + port + " for incoming connections.");
+        if (hasFile) {
+            System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
             // we need to load the file's data into this program so we can distribute it to the other peers
             // TODO: do something to bitfield
             // TODO: File was being weird when tried to open without getProperty - is this a problem?
-            String directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + inputID;
+            directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
             try {
                 File directory = new File(directoryPath);
                 System.out.println(directory.getName());
@@ -86,21 +85,19 @@ public class PeerProcess {
                     fis.read(fileData);
                     System.out.println(fileData);
                     fis.close();
-                    System.out.println("Server has been deployed for peer " + inputID + " which is hosting file " + target.getName());
+                    System.out.println("Server has been deployed for peer " + peerID + " which is hosting file " + target.getName());
                 }
             } catch (Exception e) {
                 System.err.println("Error loading the file: " + e.getMessage());
             }
         }
         else { //this peer does not have file - it will be server and client
-            // Simulate server
-            System.out.println("Peer " + peerId + " listening on port " + port + " for incoming connections.");
-
-            // Simulate client
-            System.out.println("Peer " + peerId + " attempting to connect to other peers...");
+            fileData = new byte[24301474]; // TODO: get this from common.cfg via configParser instead of hard-coding
+            directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
         }
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
+        peer = new peer(peerID);
 
         //TODO: begin server functioning
 

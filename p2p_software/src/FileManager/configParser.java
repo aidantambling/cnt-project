@@ -1,6 +1,7 @@
 package FileManager;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ public class configParser {
 
                 String key = parts[0].trim();
                 String value = parts[1].trim();
+//                System.out.println(key + " " + value);
                 configMap.put(key, value);
             }
         }
@@ -38,7 +40,7 @@ public class configParser {
 
     //file path is hard coded this must be changed later
     public void readFile() throws IOException {
-        String filePath = "../Configs/small/common.cfg";
+        String filePath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "configs" + File.separator + "Common.cfg";
         configMap = parseConfigFile(filePath);
     }
 

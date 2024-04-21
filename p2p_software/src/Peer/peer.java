@@ -1,4 +1,7 @@
 package Peer;
+import tcpProcess.tcp_client;
+import tcpProcess.tcp_server;
+
 import java.net.Socket;
 
 public class peer {
@@ -7,6 +10,21 @@ public class peer {
   private Socket socket;
   private boolean interest;
   private byte[] bitfield;
+
+  tcp_client client;
+  tcp_server server;
+
+  // constructor to launch a peer object from peerProcess
+  peer (int PeerId){
+    System.out.println("Creating peer with peerID: " + PeerId);
+    server = new tcp_server(8000, PeerId);
+    client = new tcp_client(8000, PeerId);
+    Thread serverThread = new Thread(() -> server.launchServer());
+    serverThread.start();
+//    server.launchServer();
+    System.out.println("Hi");
+//    client.requestServer("");
+  }
 
   public int getPeerId() {
     return PeerId;
