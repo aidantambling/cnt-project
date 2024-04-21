@@ -17,7 +17,7 @@ public class configParser {
     
     //this function make a map of variables to values
     private static Map<String, String> parseConfigFile(String filePath) throws IOException {
-        configMap = new HashMap<>();
+        configMap = new HashMap<>(); // configMap lets us ge the value of different properties (# neighbors, intervals, etc)
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
