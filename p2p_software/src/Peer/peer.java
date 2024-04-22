@@ -36,7 +36,7 @@ public class peer {
       else { // skip the current peer
         int targetPeerPort = p.getPort(); // 6001
         String targetPeerAddress = "10.228.13.48";
-        tcp_client client = new tcp_client(targetPeerPort, PeerId);
+        client = new tcp_client(targetPeerPort, PeerId);
         Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
         clientThread.start();
         System.out.println("Connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);

@@ -50,17 +50,19 @@ public class tcp_client {
         // send handshake
         sendHandshake(requestSocket);
         // receive handshake
-        boolean handshakeStatus;
-        try {
-            handshakeStatus = readHandshake((byte[]) socketInput.readObject());
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        if (!handshakeStatus){
-            System.out.println("The handshake was unsuccessful.");
-            return;
-        }
+//        boolean handshakeStatus;
+//        try {
+//            handshakeStatus = readHandshake((byte[]) socketInput.readObject());
+//        } catch (IOException | ClassNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
+//        if (!handshakeStatus){
+//            System.out.println("The handshake was unsuccessful.");
+//            return;
+//        }
         System.out.println("The handshake was successful.");
+
+        maintainConnection();
 
         // now, actual messages can be sent.
     }
@@ -75,12 +77,11 @@ public class tcp_client {
         // 10-byte zero bits
         byte[] zeroBits = new byte[10];
         // 4-byte peerID
-        int peerID = 1001;
 
         ByteBuffer buffer = ByteBuffer.allocate(32);
         buffer.put(header);
         buffer.put(zeroBits);
-        buffer.putInt(peerID);
+        buffer.putInt(clientID);
         System.out.println(Arrays.toString(buffer.array()));
 
         sendMessage(buffer.array(), socket);
@@ -137,9 +138,8 @@ public class tcp_client {
             return;
         }
         try {
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            out.flush();
-            out.writeObject(message);
+            socketOutput.flush();
+            socketOutput.writeObject(message);
         } catch (SocketException se) {
             // potential causes: slow network, firewall, idle connection, or code errors
             System.out.println("Error was encountered while trying to access the socket");
@@ -151,6 +151,36 @@ public class tcp_client {
             System.out.println("Error was encountered while trying to manage IO operations");
         }
     }
+
+    public void maintainConnection() {
+        try {
+            int i = 0;
+            while (true) {
+                // Example sending a message to server
+                socketOutput.writeObject("Hello from Client " + i + ": " + clientID);
+                socketOutput.flush();
+
+                // Waiting for a response
+                String response = (String) socketInput.readObject();
+                System.out.println("Response from server: " + response);
+
+                // Check for termination condition
+                if (response.equals("exit")) {
+                    break;
+                }
+                if (i == 20){
+                    socketOutput.writeObject("exit");
+                    break;
+                }
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println("Communication error: " + e.getMessage());
+        } finally {
+            closeClient();
+        }
+    }
+
 
     public void sendCommunication(){
         String message;

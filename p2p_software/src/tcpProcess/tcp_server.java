@@ -31,15 +31,45 @@ public class tcp_server
             // program stops here until a client issues a connection request
             this.socket = server.accept();
             System.out.println("Incoming connection detected from client");
-            sendHandshake(this.socket);
 
             // takes input from the client socket
-            this.socketInput = new ObjectInputStream((socket.getInputStream()));
             this.socketOutput = new ObjectOutputStream(socket.getOutputStream());
+            this.socketInput = new ObjectInputStream((socket.getInputStream()));
+
+            // receive handshake
+            boolean handshakeStatus;
+            try {
+                handshakeStatus = readHandshake((byte[]) socketInput.readObject());
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            if (!handshakeStatus){
+                System.out.println("The handshake was unsuccessful.");
+                return;
+            }
+            System.out.println("The handshake was successful.");
+//            sendHandshake(this.socket);
+
+            // Keep listening for messages
+            while (true) {
+                Object message = socketInput.readObject();
+                if (message instanceof String) { // Assuming message is a String
+                    System.out.println("Received: " + message);
+                    // Process message or respond
+                    socketOutput.writeObject("Ack: " + message);
+                    socketOutput.flush();
+                }
+                // Implement your protocol's termination condition here
+                if (message.equals("exit")) {
+                    break;
+                }
+            }
         } catch(IOException i)
         {
             System.out.println("Error in connection with client or input detection");
             throw new RuntimeException(i);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -57,7 +87,7 @@ public class tcp_server
     }
 
 
-    public void readHandshake(byte[] handshakeMessage){
+    public boolean readHandshake(byte[] handshakeMessage){
         // byte buffer to parse the handshake message
         ByteBuffer handshakeBuffer = ByteBuffer.wrap(handshakeMessage);
 
@@ -74,7 +104,7 @@ public class tcp_server
 
         if (!header.equals("P2PFILESHARINGPROJ")){
             System.out.println("The header does not match the handshake header.");
-            return;
+            return false;
         }
         else {
             System.out.println("Header: " + header);
@@ -84,11 +114,12 @@ public class tcp_server
         for (byte b : zeroBytes){
             if (b != 0){
                 System.out.println("A zero byte was transmitted incorrectly.");
-                return;
+                return false;
             }
             System.out.print(b);
         }
         System.out.println("Peer ID: " + extractedPeerID);
+        return true;
     }
 
     public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
@@ -107,9 +138,8 @@ public class tcp_server
             return;
         }
         try {
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            out.flush();
-            out.writeObject(message);
+            socketOutput.flush();
+            socketOutput.writeObject(message);
         } catch (SocketException se) {
             // potential causes: slow network, firewall, idle connection, or code errors
             System.out.println("Error was encountered while trying to access the socket");
