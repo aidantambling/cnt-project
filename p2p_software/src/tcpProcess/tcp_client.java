@@ -202,28 +202,33 @@ public class tcp_client {
 //                    System.out.println("Received byte array from peer " + otherPeerID + ", length: " + ((byte[]) response).length);
                     ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
                     byte messageType = buffer.get();
-                    if (messageType == 7){
+                    if (messageType == 7 && !fileManager.hasAllPieces()){
 //                        System.out.println("Byte array was a piece message");
                         int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
                         byte[] pieceData = new byte[buffer.remaining()];
                         buffer.get(pieceData);
-                        fileManager.storePiece(pieceIndex, pieceData);  // Assuming you have a method to store pieces
-                        System.out.println("Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length);
+                        if (!fileManager.hasPiece(pieceIndex)) {
+                            fileManager.storePiece(pieceIndex, pieceData);  // Assuming you have a method to store pieces
+                            System.out.println("Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
+                        } else {
+                            System.out.println("We already have piece at index: " + pieceIndex + " - client for peer " + otherPeerID);
+                        }
+                        if (fileManager.hasAllPieces()){
+                            System.out.println("Bitfield is complete!!!!");
+                            fileManager.writeToFile();
+                        }
                     }
                 }
-//                for (boolean b : fileManager.getBitfield()){
-//                    System.out.print(b);
-//                }
 
-                for (int i = 0; i < fileManager.getBitfield().length; i++){
-                    if (!fileManager.hasPiece(i)){ // doesn't have this part of the file yet
-//                        System.out.println("Bitfield incomplete");
-                        break;
-                    }
-                    if (i == fileManager.getBitfield().length - 1){
-                        System.out.println("Bitfield is complete!!!!");
-                    }
-                }
+//                for (int i = 0; i < fileManager.getBitfield().length; i++){
+//                    if (!fileManager.hasPiece(i)){ // doesn't have this part of the file yet
+//                        break;
+//                    }
+//                    if (i == fileManager.getBitfield().length - 1){
+//                        System.out.println("Bitfield is complete!!!!");
+//                        fileManager.writeToFile();
+//                    }
+//                }
 
             }
         } catch (Exception e) {

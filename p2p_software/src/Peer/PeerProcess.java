@@ -65,7 +65,6 @@ public class PeerProcess {
 //        System.out.println("Starting logger for peer " + peerID);
 
         // if peer has the file, it will just be a server
-        System.out.println(configParser.getPieceSize());
         if (hasFile) {
             System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
             // we need to load the file's data into this program so we can distribute it to the other peers
@@ -78,7 +77,7 @@ public class PeerProcess {
                 File target;
                 if (files != null && files.length > 0){
                     target = files[0];
-                    fileManager = new FileManager(target.getAbsolutePath(), (int) configParser.getPieceSize());
+                    fileManager = new FileManager(target.getAbsolutePath(), configParser.getFileName(), (int) configParser.getPieceSize());
                 }
                 else {
                     System.out.println("No files found / error reading the files.");
@@ -96,8 +95,8 @@ public class PeerProcess {
             }
         }
         else { //this peer does not have file - it will be server and client
-            fileManager = new FileManager((int) configParser.getFileSize(), (int) configParser.getPieceSize()); // Alternative constructor for non-file-owners
-            directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
+            directoryPath = System.getProperty("user.dir") + File.separator + "peer_" + peerID;
+            fileManager = new FileManager((int) configParser.getFileSize(), directoryPath, configParser.getFileName(), (int) configParser.getPieceSize()); // Alternative constructor for non-file-owners
         }
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.

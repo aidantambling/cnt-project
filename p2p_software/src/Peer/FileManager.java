@@ -2,6 +2,7 @@ package Peer;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -11,7 +12,12 @@ public class FileManager {
     private File file;
     private int pieceSize;
 
-    public FileManager(String filePath, int pieceSize) throws IOException {
+    private String filepath;
+    private String filename;
+
+    public FileManager(String filePath, String filename, int pieceSize) throws IOException {
+        this.filepath = filePath;
+        this.filename = filename;
         this.pieceSize = pieceSize;
         this.file = new File(filePath);
         System.out.println(this.pieceSize);
@@ -22,6 +28,35 @@ public class FileManager {
             System.out.println("File does not exist, setting up for download.");
             this.pieces = new byte[calculateNumPieces(file.length())][];
             this.hasPiece = new boolean[calculateNumPieces(file.length())];
+        }
+    }
+
+    public void writeToFile() throws IOException {
+        if (!hasAllPieces()) {
+            System.out.println("Not all pieces are downloaded yet.");
+            return;
+        }
+        String outputPath = this.filepath;
+        outputPath += (File.separator + this.filename);
+        System.out.println(outputPath);
+
+        // TODO: uncomment this code - when all bytes have been received from other peers, we write to the file.
+
+        File outputFile = new File(outputPath);
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+            for (int i = 0; i < pieces.length; i++) {
+                if (pieces[i] != null) {
+                    fos.write(pieces[i]);
+                } else {
+                    System.out.println("Missing piece at index " + i + ", cannot write file.");
+                    return;
+                }
+            }
+            fos.flush();
+            System.out.println("All pieces have been written to the file: " + outputPath);
+        } catch (IOException e) {
+            System.out.println("Failed to write file: " + e.getMessage());
+            throw e;
         }
     }
 
@@ -82,8 +117,10 @@ public class FileManager {
     }
 
     // constructor for when a peer does not begin with the file
-    public FileManager(int totalSize, int pieceSize) {
+    public FileManager(int totalSize, String directoryPath, String filename, int pieceSize) {
         System.out.println("This peer does not have the file. Its file is empty.");
+        this.filepath = directoryPath;
+        this.filename = filename;
         this.pieceSize = pieceSize;
         int numPieces = (int) Math.ceil(totalSize / (double) pieceSize);
         pieces = new byte[numPieces][];
