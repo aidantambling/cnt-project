@@ -1,5 +1,6 @@
 package tcpProcess;
 import Peer.FileManager;
+import Peer.Messages.Request;
 
 import java.io.*;
 import java.net.*;
@@ -172,25 +173,38 @@ public class tcp_client {
 
             // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
 
+            // request missing pieces
+            // TODO: implement this in server, too.
+            boolean[] myBitfield = fileManager.getBitfield();
+            for (int i = 0; i < myBitfield.length; i++){
+                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
+                    Request request = new Request(i);
+                    byte[] requestBytes = request.toBytes();
+                    socketOutput.writeObject(requestBytes);
+                    socketOutput.flush();
+                    System.out.println("Requested piece: " + i);
+                }
+            }
+
             while (true) {
-                // Read an object from the stream
+                System.out.println("Looping");
                 response = socketInput.readObject();
 
-                // Handle different types of responses appropriately
-                if (response instanceof String) {
+                if (response == null){
+                    System.out.println("Null response");
+                }
+                else if (response instanceof String) {
                     System.out.println("Response from server: " + response);
-                    // Example check for termination condition
                     if (((String) response).equals("exit")) {
                         break;
                     }
                 } else if (response instanceof byte[]) {
                     System.out.println("Received byte array from server, length: " + ((byte[]) response).length);
-                    // Additional handling for byte arrays if needed
                 }
-                // Add handling for other expected types if necessary
             }
         } catch (Exception e) {
             System.out.println("Communication error: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             closeClient();
         }

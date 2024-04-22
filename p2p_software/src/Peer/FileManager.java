@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class FileManager {
     private byte[][] pieces;
-    private boolean[] hasPiece;
+    public boolean[] hasPiece;
     private File file;
     private int pieceSize;
 
@@ -34,11 +34,18 @@ public class FileManager {
             pieces[i] = new byte[pieceSize];
             int bytesRead = fis.read(pieces[i], 0, pieceSize);
             if (bytesRead < pieceSize) {
-                pieces[i] = java.util.Arrays.copyOf(pieces[i], bytesRead);  // Resize last piece if smaller
+                pieces[i] = java.util.Arrays.copyOf(pieces[i], bytesRead); // last filePiece might be < pieceSize...
             }
             hasPiece[i] = true;
         }
         fis.close();
+    }
+
+    public synchronized boolean hasPiece(int index) {
+        if (index < 0 || index >= hasPiece.length) {
+            return false;  // out of bounds index - can't own it
+        }
+        return hasPiece[index];
     }
 
     private int calculateNumPieces(long fileSize) {
@@ -75,7 +82,7 @@ public class FileManager {
         System.out.println("This peer does not have the file. Its file is empty.");
         int numPieces = (int) Math.ceil(totalSize / (double) pieceSize);
         pieces = new byte[numPieces][];
-        hasPiece = new boolean[numPieces]; // Automatically initialized to false
+        hasPiece = new boolean[numPieces]; // without the file, we obviously begin lacking the piece
     }
 }
 

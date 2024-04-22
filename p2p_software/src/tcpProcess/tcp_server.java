@@ -1,5 +1,7 @@
 package tcpProcess;
 import Peer.FileManager;
+import Peer.Messages.Piece;
+import Peer.Messages.Request;
 
 import java.net.*;
 import java.io.*;
@@ -72,20 +74,24 @@ public class tcp_server
 
                 // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
 
+                //TODO: reciprocate this in tcp_client
                 while (true) {
-                    // Read an object from the stream
                     response = socketInput.readObject();
 
-                    // Handle different types of responses appropriately
-                    if (response instanceof String) {
+                    if (response instanceof byte[]){
+                        byte[] byteArrayResponse = (byte [])response;
+                        if (byteArrayResponse[0] == 6){
+                            System.out.println("We received a request");
+                            handleIncomingRequests(byteArrayResponse, socketOutput, fileManager);
+                        }
+                    }
+                    else if (response instanceof String) {
                         System.out.println("Response from server: " + response);
-                        // Example check for termination condition
                         if (response.equals("exit")) {
                             break;
                         }
                     } else if (response instanceof byte[]) {
                         System.out.println("Received byte array from server, length: " + ((byte[]) response).length);
-                        // Additional handling for byte arrays if needed
                     }
                 }
             } catch (IOException e) {
@@ -100,6 +106,35 @@ public class tcp_server
                 }
             }
         }
+
+        public void handleIncomingRequests(byte[] requestBytes, ObjectOutputStream out, FileManager fileManager) throws IOException {
+            if (requestBytes.length >= 5) { // byte 1 is to identify msg type, 2-5 are to get index. length must exceed this
+                int pieceIndex = ByteBuffer.wrap(requestBytes, 1, 4).getInt();
+                if (fileManager.hasPiece(pieceIndex)) {
+                    byte[] pieceData = fileManager.getPiece(pieceIndex);
+                    if (pieceData != null) {
+                        sendPiece(out, pieceIndex, pieceData);
+                        System.out.println("Sent piece: " + pieceIndex);
+                    } else {
+                        System.out.println("Error: No data for piece " + pieceIndex);
+                    }
+                } else {
+                    System.out.println("Do not have requested piece index: " + pieceIndex);
+                }
+            } else {
+                System.out.println("Invalid request message received");
+            }
+        }
+
+        public void sendPiece(ObjectOutputStream out, int pieceIndex, byte[] pieceData) throws IOException {
+            ByteBuffer buffer = ByteBuffer.allocate(5 + pieceData.length);
+            buffer.put((byte) 7);  // 7 is the defined code for a piece message.
+            buffer.putInt(pieceIndex);
+            buffer.put(pieceData);
+            out.writeObject(buffer.array());
+            out.flush();
+        }
+
         public void sendBitfield(Socket socket) {
             try {
                 socketOutput.writeObject(fileManager.getBitfield());

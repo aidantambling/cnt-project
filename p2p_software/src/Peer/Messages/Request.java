@@ -8,6 +8,10 @@ public class Request implements Message {
         this.pieceIndex = pieceIndex;
     }
 
+    public int getPieceIndex() {
+        return pieceIndex;
+    }
+
     @Override
     public byte[] toBytes() {
         byte[] bytes = new byte[5];
