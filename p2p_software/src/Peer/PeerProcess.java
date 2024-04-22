@@ -97,7 +97,7 @@ public class PeerProcess {
         }
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
-        peer = new peer(peerID);
+        peer = new peer(peerID, port, peerInfoParser.peerInfoVector);
 
         //TODO: begin server functioning
 

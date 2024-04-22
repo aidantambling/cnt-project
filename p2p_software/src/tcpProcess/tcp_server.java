@@ -25,7 +25,7 @@ public class tcp_server
         {
             this.server = new ServerSocket(port); //TODO: get port number from configs
             InetAddress local = InetAddress.getLocalHost();
-            System.out.println("TCP Server has been launched with port " + port);
+            System.out.println("Peer " + serverID + " has launched a TCP Server with port " + port);
             System.out.println("and IP " + local.getHostAddress() + " on peer " + serverID);
 
             // program stops here until a client issues a connection request

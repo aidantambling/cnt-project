@@ -61,7 +61,7 @@ public class peerInfoParser {
 
     //for now file path is hardcoded this must be changed later
     public void readFile() throws IOException {
-        String filePath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "configs" + File.separator + "PeerInfo.cfg";
+        String filePath = System.getProperty("user.dir") + File.separator + "configs" + File.separator + "PeerInfo.cfg";
         parseConfigFile(filePath);
     }
 }

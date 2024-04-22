@@ -22,7 +22,7 @@ public class tcp_client {
         this.clientID = id;
     }
 
-    public void requestServer(String address){
+    public void requestServer(String address, int port){
         InetAddress IP;
         try {
             IP = InetAddress.getByName(address);
@@ -31,11 +31,11 @@ public class tcp_client {
             throw new RuntimeException(e);
         }
         try {
-            this.requestSocket = new Socket(IP, 1664);
+            this.requestSocket = new Socket(IP, port);
             System.out.println("Client-side socket established by peer " + clientID);
             System.out.println("Hostname: " + address);
             System.out.println("Address: " + IP.getHostAddress());
-            System.out.println("Port: " + 1664);
+            System.out.println("Port: " + port);
 
             // input is taken in from the console
             this.consoleInput = new BufferedReader(new InputStreamReader(System.in));

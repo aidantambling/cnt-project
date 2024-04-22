@@ -1,8 +1,10 @@
 package Peer;
+import FileManager.peerInfoParser;
 import tcpProcess.tcp_client;
 import tcpProcess.tcp_server;
 
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class peer {
   // contains all the member variables of a peer
@@ -15,15 +17,32 @@ public class peer {
   tcp_server server;
 
   // constructor to launch a peer object from peerProcess
-  peer (int PeerId){
+  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector){
     System.out.println("Creating peer with peerID: " + PeerId);
-    server = new tcp_server(8000, PeerId);
-    client = new tcp_client(8000, PeerId);
+
+    // Deploy the server-side
+    System.out.println("Deploying the server-side...");
+    server = new tcp_server(peerPort, PeerId);
     Thread serverThread = new Thread(() -> server.launchServer());
     serverThread.start();
-//    server.launchServer();
-    System.out.println("Hi");
-//    client.requestServer("");
+
+    // Deploy the client-side: attempt to connect to each of the other peers
+    System.out.println("Server-side deployed.");
+    System.out.println("Deploying the client-side");
+    for (peerInfoParser.peerInfo p : peerInfoVector){
+      if (p.getPeerId() == PeerId){
+        break; // only attempt to connect to peers that precede this one (which will have already been launched)
+      }
+      else { // skip the current peer
+        int targetPeerPort = p.getPort(); // 6001
+        String targetPeerAddress = "10.228.13.48";
+        tcp_client client = new tcp_client(targetPeerPort, PeerId);
+        Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
+        clientThread.start();
+        System.out.println("Connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);
+      }
+    }
+    System.out.println("Client-side deployed.");
   }
 
   public int getPeerId() {
