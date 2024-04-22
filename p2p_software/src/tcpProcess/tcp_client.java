@@ -182,25 +182,49 @@ public class tcp_client {
                     byte[] requestBytes = request.toBytes();
                     socketOutput.writeObject(requestBytes);
                     socketOutput.flush();
-                    System.out.println("Requested piece: " + i);
+                    System.out.println("Requested piece from peer " + otherPeerID + ": " + i);
                 }
             }
 
             while (true) {
-                System.out.println("Looping");
+//                System.out.println("Looping");
                 response = socketInput.readObject();
 
                 if (response == null){
                     System.out.println("Null response");
                 }
                 else if (response instanceof String) {
-                    System.out.println("Response from server: " + response);
+                    System.out.println("Response from peer " + otherPeerID + ": " + response);
                     if (((String) response).equals("exit")) {
                         break;
                     }
                 } else if (response instanceof byte[]) {
-                    System.out.println("Received byte array from server, length: " + ((byte[]) response).length);
+//                    System.out.println("Received byte array from peer " + otherPeerID + ", length: " + ((byte[]) response).length);
+                    ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
+                    byte messageType = buffer.get();
+                    if (messageType == 7){
+//                        System.out.println("Byte array was a piece message");
+                        int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
+                        byte[] pieceData = new byte[buffer.remaining()];
+                        buffer.get(pieceData);
+                        fileManager.storePiece(pieceIndex, pieceData);  // Assuming you have a method to store pieces
+                        System.out.println("Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length);
+                    }
                 }
+//                for (boolean b : fileManager.getBitfield()){
+//                    System.out.print(b);
+//                }
+
+                for (int i = 0; i < fileManager.getBitfield().length; i++){
+                    if (!fileManager.hasPiece(i)){ // doesn't have this part of the file yet
+//                        System.out.println("Bitfield incomplete");
+                        break;
+                    }
+                    if (i == fileManager.getBitfield().length - 1){
+                        System.out.println("Bitfield is complete!!!!");
+                    }
+                }
+
             }
         } catch (Exception e) {
             System.out.println("Communication error: " + e.getMessage());

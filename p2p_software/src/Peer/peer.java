@@ -36,8 +36,8 @@ public class peer {
         break; // only attempt to connect to peers that precede this one (which will have already been launched)
       }
       else { // skip the current peer
-        int targetPeerPort = p.getPort(); // 6001
-        String targetPeerAddress = "192.168.56.1"; // hard-coded IP - change this
+        int targetPeerPort = p.getPort();
+        String targetPeerAddress = "localhost"; // hard-coded IP - change this
         client = new tcp_client(targetPeerPort, PeerId, fileManager);
         Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
         clientThread.start();

@@ -65,6 +65,7 @@ public class PeerProcess {
 //        System.out.println("Starting logger for peer " + peerID);
 
         // if peer has the file, it will just be a server
+        System.out.println(configParser.getPieceSize());
         if (hasFile) {
             System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
             // we need to load the file's data into this program so we can distribute it to the other peers

@@ -30,7 +30,7 @@ public class configParser {
 
                 String key = parts[0].trim();
                 String value = parts[1].trim();
-//                System.out.println(key + " " + value);
+                System.out.println(key + " " + value);
                 configMap.put(key, value);
             }
         }
@@ -70,7 +70,7 @@ public class configParser {
     }
 
     public long getPieceSize() {
-        this.PieceSize = Integer.valueOf(configMap.get("PieceSize"));
+        this.PieceSize = Integer.parseInt(configMap.get("PieceSize"));
         return PieceSize;
     }
     

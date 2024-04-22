@@ -14,6 +14,7 @@ public class FileManager {
     public FileManager(String filePath, int pieceSize) throws IOException {
         this.pieceSize = pieceSize;
         this.file = new File(filePath);
+        System.out.println(this.pieceSize);
         if (file.exists() && file.isFile()) {
             loadFile();
             System.out.println("This peer has read in the file.");
@@ -60,9 +61,12 @@ public class FileManager {
     }
 
     public synchronized void storePiece(int index, byte[] data) {
+//        System.out.println("Attempting to store piece at " + index);
+        System.out.println(index + " " + pieces.length + " " + data.length + " " + this.pieceSize + " " + data);
         if (index >= 0 && index < pieces.length && data != null && data.length <= pieceSize) {
             pieces[index] = data;
             hasPiece[index] = true;
+//            System.out.println("Piece at " + index + " has been updated to " + hasPiece(index));
         }
     }
 
@@ -80,6 +84,7 @@ public class FileManager {
     // constructor for when a peer does not begin with the file
     public FileManager(int totalSize, int pieceSize) {
         System.out.println("This peer does not have the file. Its file is empty.");
+        this.pieceSize = pieceSize;
         int numPieces = (int) Math.ceil(totalSize / (double) pieceSize);
         pieces = new byte[numPieces][];
         hasPiece = new boolean[numPieces]; // without the file, we obviously begin lacking the piece
