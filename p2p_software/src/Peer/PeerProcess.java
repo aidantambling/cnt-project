@@ -3,6 +3,7 @@ package Peer;
 import FileManager.configParser;
 import FileManager.peerInfoParser;
 
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,7 +13,8 @@ import java.util.ArrayList;
 public class PeerProcess {
 
     static peer peer;
-    static byte[] fileData;
+    private static FileManager fileManager;
+//    static byte[] fileData;
     static String directoryPath;
 
     public static void main(String[] args) throws IOException {
@@ -50,6 +52,7 @@ public class PeerProcess {
                 hostname = p.getHostName();
                 port = p.getPort();
                 hasFile = p.hasCompleteFile();
+                System.out.println(port + " " + hasFile);
                 break;
             }
             if (i == peerInfoParser.peerInfoVector.size() - 1){
@@ -66,36 +69,38 @@ public class PeerProcess {
             System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
             // we need to load the file's data into this program so we can distribute it to the other peers
             // TODO: do something to bitfield
-            // TODO: File was being weird when tried to open without getProperty - is this a problem?
-            directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
+            directoryPath = System.getProperty("user.dir") + File.separator + "peer_" + peerID;
             try {
                 File directory = new File(directoryPath);
-                System.out.println(directory.getName());
+                System.out.println(directory.getAbsolutePath());
                 File[] files = directory.listFiles();
                 File target;
-                if (files == null){
-                    System.out.println("No files found in the given peer's directory");
+                if (files != null && files.length > 0){
+                    target = files[0];
+                    fileManager = new FileManager(target.getAbsolutePath(), (int) configParser.getPieceSize());
                 }
                 else {
-                    target = files[0]; // grab the file object the peer will be sending
-                    FileInputStream fis = new FileInputStream(target);
-                    fileData = new byte[(int)target.length()];
-                    fis.read(fileData);
-                    System.out.println(fileData);
-                    fis.close();
-                    System.out.println("Server has been deployed for peer " + peerID + " which is hosting file " + target.getName());
+                    System.out.println("No files found / error reading the files.");
+                    return;
+//                    target = files[0]; // grab the file object the peer will be sending
+//                    FileInputStream fis = new FileInputStream(target);
+//                    fileData = new byte[(int)target.length()];
+//                    fis.read(fileData);
+//                    System.out.println(fileData);
+//                    fis.close();
+//                    System.out.println("Server has been deployed for peer " + peerID + " which is hosting file " + target.getName());
                 }
             } catch (Exception e) {
                 System.err.println("Error loading the file: " + e.getMessage());
             }
         }
         else { //this peer does not have file - it will be server and client
-            fileData = new byte[(int) configParser.getFileSize()];
+            fileManager = new FileManager((int) configParser.getFileSize(), (int) configParser.getPieceSize()); // Alternative constructor for non-file-owners
             directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
         }
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
-        peer = new peer(peerID, port, peerInfoParser.peerInfoVector);
+        peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager);
 
         //TODO: begin server functioning
 

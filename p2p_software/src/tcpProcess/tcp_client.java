@@ -1,4 +1,6 @@
 package tcpProcess;
+import Peer.FileManager;
+
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -9,15 +11,19 @@ import java.util.Arrays;
 public class tcp_client {
     int port;
     public int clientID;
+
+    public int otherPeerID;
     BufferedReader consoleInput; // read input from the command line
     ObjectOutputStream socketOutput; // write to the socket
     ObjectInputStream socketInput; // read from the socket
+    private FileManager fileManager;
 
     ArrayList<Socket> sockets;
     Socket requestSocket;
-    public tcp_client(int port, int id){
+    public tcp_client(int port, int id, FileManager fileManager){
         this.port = port;
         this.clientID = id;
+        this.fileManager = fileManager;
     }
 
     public void requestServer(String address, int port){
@@ -32,9 +38,6 @@ public class tcp_client {
             this.requestSocket = new Socket(IP, port);
             System.out.println("Client-side socket established by peer " + clientID + " for " + IP.getHostAddress() + ":" + port);
 
-//            // input is taken in from the console
-//            this.consoleInput = new BufferedReader(new InputStreamReader(System.in));
-//            // output from the socket is sent to the server socket for reading
             this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
             this.socketOutput.flush();
             this.socketInput = new ObjectInputStream((this.requestSocket.getInputStream()));
@@ -42,24 +45,7 @@ public class tcp_client {
             System.out.println("Error in establishing a socket connection!");
             throw new RuntimeException(e);
         }
-        // send handshake
-//        sendHandshake(requestSocket);
-        // receive handshake
-//        boolean handshakeStatus;
-//        try {
-//            handshakeStatus = readHandshake((byte[]) socketInput.readObject());
-//        } catch (IOException | ClassNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
-//        if (!handshakeStatus){
-//            System.out.println("The handshake was unsuccessful.");
-//            return;
-//        }
-//        System.out.println("The handshake was successful.");
-
         maintainConnection(requestSocket);
-
-        // now, actual messages can be sent.
     }
 
     public void sendHandshake(Socket socket) {
@@ -75,6 +61,32 @@ public class tcp_client {
             System.out.println("Handshake sent: " + Arrays.toString(buffer.array()));
         } catch (IOException e) {
             System.out.println("Failed to send handshake: " + e.getMessage());
+        }
+    }
+
+    public void sendBitfield(Socket socket) {
+        try {
+            socketOutput.writeObject(fileManager.getBitfield());
+            socketOutput.flush();
+            System.out.println("Bitfield has been sent.");
+        } catch (IOException e) {
+            System.out.println("Failed to send bitfield: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean[] receiveBitfield(Socket socket){
+        try {
+            boolean[] bitfield = (boolean[]) socketInput.readObject();
+            System.out.println("Bitfield received from Peer " + otherPeerID + ": ");
+            for (boolean b : bitfield){
+                System.out.print(b);
+            }
+            return bitfield;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -111,6 +123,7 @@ public class tcp_client {
             System.out.print(b);
         }
         System.out.println("Peer ID: " + extractedPeerID);
+        otherPeerID = extractedPeerID;
         return true;
     }
 
@@ -152,6 +165,13 @@ public class tcp_client {
             if (response instanceof byte[]){
                 readHandshake((byte[]) response);
             }
+
+            // send bitfield right after handshake
+            sendBitfield(requestSocket);
+            boolean[] otherBitfield = receiveBitfield(requestSocket);
+
+            // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
+
             while (true) {
                 // Read an object from the stream
                 response = socketInput.readObject();

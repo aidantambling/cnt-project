@@ -1,4 +1,6 @@
 package tcpProcess;
+import Peer.FileManager;
+
 import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -12,11 +14,13 @@ public class tcp_server
     public int port;
     public int serverID;
     ServerSocket server;
+    private FileManager fileManager;
 //    Socket socket;
 
-    public tcp_server(int port, int id){
+    public tcp_server(int port, int id, FileManager fileManager){
         this.port = port;
         this.serverID = id;
+        this.fileManager = fileManager;
     }
 
     public void launchServer() {
@@ -43,6 +47,8 @@ public class tcp_server
         ObjectInputStream socketInput;
         ObjectOutputStream socketOutput;
 
+        public int otherPeerID;
+
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
         }
@@ -59,6 +65,13 @@ public class tcp_server
                 if (response instanceof byte[]){
                     readHandshake((byte[]) response);
                 }
+
+                // send bitfield right after handshake
+                sendBitfield(clientSocket);
+                receiveBitfield(clientSocket);
+
+                // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
+
                 while (true) {
                     // Read an object from the stream
                     response = socketInput.readObject();
@@ -67,7 +80,7 @@ public class tcp_server
                     if (response instanceof String) {
                         System.out.println("Response from server: " + response);
                         // Example check for termination condition
-                        if (((String) response).equals("exit")) {
+                        if (response.equals("exit")) {
                             break;
                         }
                     } else if (response instanceof byte[]) {
@@ -87,7 +100,31 @@ public class tcp_server
                 }
             }
         }
+        public void sendBitfield(Socket socket) {
+            try {
+                socketOutput.writeObject(fileManager.getBitfield());
+                socketOutput.flush();
+                System.out.println("Bitfield has been sent.");
+            } catch (IOException e) {
+                System.out.println("Failed to send bitfield: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
 
+        public boolean[] receiveBitfield(Socket socket){
+            try {
+                boolean[] bitfield = (boolean[]) socketInput.readObject();
+                System.out.println("Bitfield received from Peer " + otherPeerID + ": ");
+                for (boolean b : bitfield){
+                    System.out.print(b);
+                }
+                return bitfield;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
         public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
             // socket validation
             if (socket == null){
@@ -141,43 +178,44 @@ public class tcp_server
             }
         }
 
-    }
+        public boolean readHandshake(byte[] handshakeMessage){
+            // byte buffer to parse the handshake message
+            ByteBuffer handshakeBuffer = ByteBuffer.wrap(handshakeMessage);
 
-    public boolean readHandshake(byte[] handshakeMessage){
-        // byte buffer to parse the handshake message
-        ByteBuffer handshakeBuffer = ByteBuffer.wrap(handshakeMessage);
+            // extract the 18-byte header from the message
+            byte[] headerBytes = new byte[18];
+            handshakeBuffer.get(headerBytes);
+            String header = new String(headerBytes);
 
-        // extract the 18-byte header from the message
-        byte[] headerBytes = new byte[18];
-        handshakeBuffer.get(headerBytes);
-        String header = new String(headerBytes);
+            byte[] zeroBytes = new byte[10];
+            handshakeBuffer.get(zeroBytes);
 
-        byte[] zeroBytes = new byte[10];
-        handshakeBuffer.get(zeroBytes);
+            // Extract the 4-byte peer ID
+            int extractedPeerID = handshakeBuffer.getInt();
 
-        // Extract the 4-byte peer ID
-        int extractedPeerID = handshakeBuffer.getInt();
-
-        if (!header.equals("P2PFILESHARINGPROJ")){
-            System.out.println("The header does not match the handshake header.");
-            return false;
-        }
-        else {
-            System.out.println("Header: " + header);
-        }
-
-        System.out.println("Zero bytes: ");
-        for (byte b : zeroBytes){
-            if (b != 0){
-                System.out.println("A zero byte was transmitted incorrectly.");
+            if (!header.equals("P2PFILESHARINGPROJ")){
+                System.out.println("The header does not match the handshake header.");
                 return false;
             }
-            System.out.print(b);
-        }
-        System.out.println("Peer ID: " + extractedPeerID);
-        return true;
-    }
+            else {
+                System.out.println("Header: " + header);
+            }
 
+            System.out.println("Zero bytes: ");
+            for (byte b : zeroBytes){
+                if (b != 0){
+                    System.out.println("A zero byte was transmitted incorrectly.");
+                    return false;
+                }
+                System.out.print(b);
+            }
+            System.out.println();
+            System.out.println("Peer ID: " + extractedPeerID);
+            this.otherPeerID = extractedPeerID;
+            return true;
+        }
+
+    }
 
 //    public void communicate(){
 //        String message = "";

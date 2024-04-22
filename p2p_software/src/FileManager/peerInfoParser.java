@@ -49,7 +49,8 @@ public class peerInfoParser {
                 peerInfo.PeerId = Integer.parseInt(parts[0].trim());
                 peerInfo.HostName = parts[1].trim();
                 peerInfo.port = Integer.parseInt(parts[2]);
-                peerInfo.hasFile = Boolean.parseBoolean(parts[3]);
+//                System.out.println(parts[3] + " " + Boolean.parseBoolean(parts[3]));
+                peerInfo.hasFile = "1".equals(parts[3]);
 
 //                System.out.println(peerInfo.PeerId + " " + peerInfo.HostName + " " + peerInfo.port + " " + peerInfo.hasFile);
 
