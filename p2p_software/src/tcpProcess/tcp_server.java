@@ -1,7 +1,5 @@
 package tcpProcess;
 import Peer.FileManager;
-import Peer.Messages.Piece;
-import Peer.Messages.Request;
 
 import java.net.*;
 import java.io.*;
@@ -70,7 +68,7 @@ public class tcp_server
 
                 // send bitfield right after handshake
                 sendBitfield(clientSocket);
-                receiveBitfield(clientSocket);
+//                receiveBitfield(clientSocket);
 
                 // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
 
@@ -79,10 +77,34 @@ public class tcp_server
                     response = socketInput.readObject();
 
                     if (response instanceof byte[]){
-                        byte[] byteArrayResponse = (byte [])response;
-                        if (byteArrayResponse[0] == 6){
+                        ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
+                        byte messageType = buffer.get();
+//                        byte[] remainingBytes = new byte[buffer.remaining()];
+                        if (messageType == 0){ // choke message
+
+                        }
+                        else if (messageType == 1){ // unchoke message
+
+                        }
+                        else if (messageType == 2){ // interested message
+
+                        }
+                        else if (messageType == 3){ // not-interested message
+
+                        }
+                        else if (messageType == 4){ // have message
+
+                        }
+                        else if (messageType == 5){ // bitfield message
+                            System.out.println("Bitfield message received.");
+                            receiveBitfield(buffer.array());
+                        }
+                        else if (messageType == 6){ // request message
                             System.out.println("We received a request");
-                            handleIncomingRequests(byteArrayResponse, socketOutput, fileManager);
+                            handleIncomingRequests(buffer.array(), socketOutput, fileManager);
+                        }
+                        else if (messageType == 7){ // piece message
+
                         }
                     }
                     else if (response instanceof String) {
@@ -135,9 +157,21 @@ public class tcp_server
             out.flush();
         }
 
+        public byte[] booleanArrayToBytes(boolean[] bools) {
+            byte[] bytes = new byte[bools.length];
+            for (int i = 0; i < bools.length; i++) {
+                bytes[i] = (byte) (bools[i] ? 1 : 0);
+            }
+            return bytes;
+        }
+
         public void sendBitfield(Socket socket) {
             try {
-                socketOutput.writeObject(fileManager.getBitfield());
+                byte[] bitfieldAsBytes = booleanArrayToBytes(fileManager.getBitfield());
+                ByteBuffer buffer = ByteBuffer.allocate(1 + bitfieldAsBytes.length);
+                buffer.put((byte) 5); // 5 is the defined code for a bitfield message.
+                buffer.put(bitfieldAsBytes);
+                socketOutput.writeObject(buffer.array());
                 socketOutput.flush();
                 System.out.println("Bitfield has been sent.");
             } catch (IOException e) {
@@ -146,19 +180,20 @@ public class tcp_server
             }
         }
 
-        public boolean[] receiveBitfield(Socket socket){
-            try {
-                boolean[] bitfield = (boolean[]) socketInput.readObject();
-                System.out.println("Bitfield received from Peer " + otherPeerID + ": ");
-                for (boolean b : bitfield){
-                    System.out.print(b);
-                }
-                return bitfield;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+        public boolean[] receiveBitfield(byte[] data) {
+            // Assuming the first byte is the message type and is skipped when this method is called.
+            byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length); // Skip the first byte (message type)
+            boolean[] bitfield = new boolean[bitfieldBytes.length];
+            for (int i = 0; i < bitfieldBytes.length; i++) {
+                bitfield[i] = bitfieldBytes[i] == 1;
             }
+            System.out.println("Bitfield received from Peer: ");
+            for (boolean b : bitfield) {
+                System.out.print(b ? "1" : "0");
+            }
+            System.out.println(); // Print newline for better format
+
+            return bitfield;
         }
         public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
             // socket validation

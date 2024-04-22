@@ -65,9 +65,21 @@ public class tcp_client {
         }
     }
 
+    public byte[] booleanArrayToBytes(boolean[] bools) {
+        byte[] bytes = new byte[bools.length];
+        for (int i = 0; i < bools.length; i++) {
+            bytes[i] = (byte) (bools[i] ? 1 : 0);
+        }
+        return bytes;
+    }
+
     public void sendBitfield(Socket socket) {
         try {
-            socketOutput.writeObject(fileManager.getBitfield());
+            byte[] bitfieldAsBytes = booleanArrayToBytes(fileManager.getBitfield());
+            ByteBuffer buffer = ByteBuffer.allocate(1 + bitfieldAsBytes.length);
+            buffer.put((byte) 5); // 5 is the defined code for a bitfield message.
+            buffer.put(bitfieldAsBytes);
+            socketOutput.writeObject(buffer.array());
             socketOutput.flush();
             System.out.println("Bitfield has been sent.");
         } catch (IOException e) {
@@ -76,19 +88,20 @@ public class tcp_client {
         }
     }
 
-    public boolean[] receiveBitfield(Socket socket){
-        try {
-            boolean[] bitfield = (boolean[]) socketInput.readObject();
-            System.out.println("Bitfield received from Peer " + otherPeerID + ": ");
-            for (boolean b : bitfield){
-                System.out.print(b);
-            }
-            return bitfield;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+    public boolean[] receiveBitfield(byte[] data) {
+        // Assuming the first byte is the message type and is skipped when this method is called.
+        byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length); // Skip the first byte (message type)
+        boolean[] bitfield = new boolean[bitfieldBytes.length];
+        for (int i = 0; i < bitfieldBytes.length; i++) {
+            bitfield[i] = bitfieldBytes[i] == 1;
         }
+        System.out.println("Bitfield received from Peer: ");
+        for (boolean b : bitfield) {
+            System.out.print(b ? "1" : "0");
+        }
+        System.out.println(); // Print newline for better format
+
+        return bitfield;
     }
 
 
@@ -169,22 +182,22 @@ public class tcp_client {
 
             // send bitfield right after handshake
             sendBitfield(requestSocket);
-            boolean[] otherBitfield = receiveBitfield(requestSocket);
+//            boolean[] otherBitfield = receiveBitfield(requestSocket);
 
             // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
 
             // request missing pieces
             // TODO: implement this in server, too.
             boolean[] myBitfield = fileManager.getBitfield();
-            for (int i = 0; i < myBitfield.length; i++){
-                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
-                    Request request = new Request(i);
-                    byte[] requestBytes = request.toBytes();
-                    socketOutput.writeObject(requestBytes);
-                    socketOutput.flush();
-                    System.out.println("Requested piece from peer " + otherPeerID + ": " + i);
-                }
-            }
+//            for (int i = 0; i < myBitfield.length; i++){
+//                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
+//                    Request request = new Request(i);
+//                    byte[] requestBytes = request.toBytes();
+//                    socketOutput.writeObject(requestBytes);
+//                    socketOutput.flush();
+//                    System.out.println("Requested piece from peer " + otherPeerID + ": " + i);
+//                }
+//            }
 
             while (true) {
 //                System.out.println("Looping");
@@ -202,6 +215,10 @@ public class tcp_client {
 //                    System.out.println("Received byte array from peer " + otherPeerID + ", length: " + ((byte[]) response).length);
                     ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
                     byte messageType = buffer.get();
+                    if (messageType == 5){ // bitfield message
+                        System.out.println("Bitfield message received.");
+                        receiveBitfield(buffer.array());
+                    }
                     if (messageType == 7 && !fileManager.hasAllPieces()){
 //                        System.out.println("Byte array was a piece message");
                         int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
