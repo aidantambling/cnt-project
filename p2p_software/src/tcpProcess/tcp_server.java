@@ -43,10 +43,19 @@ public class tcp_server
         }
     }
 
-    public void sendHandshake(Socket socket){
-        String tempHandshake = "Handshake from server"; // will replace with an actual handshake message later
-        sendMessage(tempHandshake, socket);
+    public void sendHandshake(Socket socket) {
+        ByteBuffer buffer = ByteBuffer.allocate(32);
+        byte[] header = "P2PFILESHARINGPROJ".getBytes();
+        byte[] zeroBits = new byte[10]; // Ensure this is zero-initialized
+        int peerID = serverID; // Assuming `serverID` is available here
+
+        buffer.put(header);
+        buffer.put(zeroBits);
+        buffer.putInt(peerID);
+
+        sendMessage(buffer.array(), socket);
     }
+
 
     public void readHandshake(byte[] handshakeMessage){
         // byte buffer to parse the handshake message
@@ -82,7 +91,7 @@ public class tcp_server
         System.out.println("Peer ID: " + extractedPeerID);
     }
 
-    public void sendMessage(String message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
+    public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
         // socket validation
         if (socket == null){
             System.out.println("The message cannot be sent - the socket could not be found");
@@ -93,7 +102,7 @@ public class tcp_server
             return;
         }
         // message validation
-        if (message.equals("")){
+        if (message.length == 0){
             System.out.println("The message is empty - it cannot be sent.");
             return;
         }
@@ -114,27 +123,27 @@ public class tcp_server
     }
 
 
-    public void communicate(){
-        String message = "";
-        while (true)
-        {
-            try
-            {
-                message = (String)socketInput.readObject();
-                if (message.equals("Bye")){
-                    break;
-                }
-                System.out.println(message + " - message received by peer " + serverID);
-                sendMessage("Demo Message", this.socket);
-                socketOutput.flush();
-            }
-            catch(Exception e)
-            {
-                System.out.println("Error in reading!");
-                throw new RuntimeException(e);
-            }
-        }
-    }
+//    public void communicate(){
+//        String message = "";
+//        while (true)
+//        {
+//            try
+//            {
+//                message = (String)socketInput.readObject();
+//                if (message.equals("Bye")){
+//                    break;
+//                }
+//                System.out.println(message + " - message received by peer " + serverID);
+//                sendMessage("Demo Message", this.socket);
+//                socketOutput.flush();
+//            }
+//            catch(Exception e)
+//            {
+//                System.out.println("Error in reading!");
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 
     public void closeServer() throws IOException {
         System.out.println("See you later client! Closing connection");
