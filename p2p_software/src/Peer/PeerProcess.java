@@ -24,12 +24,10 @@ public class PeerProcess {
          *      if has file, it will only be a server
          *      if not, it will be client and server
          */
-         //for now this is hardcoded dummy implementation of peer process
 
         // 1. parse the config files
 
         // Parse the .cfg files to get important info abt the peers
-        // .readFile() lines commented out - .cfg files not present yet.
         configParser configParser = new configParser();
         configParser.readFile();
         peerInfoParser peerParser = new peerInfoParser();
@@ -61,7 +59,7 @@ public class PeerProcess {
         }
 
         // Start logger with a dummy message 
-        System.out.println("Starting logger for peer " + peerID);
+//        System.out.println("Starting logger for peer " + peerID);
 
         // if peer has the file, it will just be a server
         if (hasFile) {
@@ -92,7 +90,7 @@ public class PeerProcess {
             }
         }
         else { //this peer does not have file - it will be server and client
-            fileData = new byte[24301474]; // TODO: get this from common.cfg via configParser instead of hard-coding
+            fileData = new byte[(int) configParser.getFileSize()];
             directoryPath = System.getProperty("user.dir") + File.separator + "src" + File.separator + "peer_" + peerID;
         }
 

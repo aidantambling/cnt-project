@@ -2,10 +2,8 @@ package tcpProcess;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 // Contains the "client" capabilities of a peer (requesting / downloading files from other peers)
 public class tcp_client {
@@ -32,14 +30,11 @@ public class tcp_client {
         }
         try {
             this.requestSocket = new Socket(IP, port);
-            System.out.println("Client-side socket established by peer " + clientID);
-            System.out.println("Hostname: " + address);
-            System.out.println("Address: " + IP.getHostAddress());
-            System.out.println("Port: " + port);
+            System.out.println("Client-side socket established by peer " + clientID + " for " + IP.getHostAddress() + ":" + port);
 
-            // input is taken in from the console
-            this.consoleInput = new BufferedReader(new InputStreamReader(System.in));
-            // output from the socket is sent to the server socket for reading
+//            // input is taken in from the console
+//            this.consoleInput = new BufferedReader(new InputStreamReader(System.in));
+//            // output from the socket is sent to the server socket for reading
             this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
             this.socketOutput.flush();
             this.socketInput = new ObjectInputStream((this.requestSocket.getInputStream()));
@@ -60,32 +55,29 @@ public class tcp_client {
 //            System.out.println("The handshake was unsuccessful.");
 //            return;
 //        }
-        System.out.println("The handshake was successful.");
+//        System.out.println("The handshake was successful.");
 
-        maintainConnection();
+        maintainConnection(requestSocket);
 
         // now, actual messages can be sent.
     }
 
-    public void sendHandshake(Socket socket){
-//        String tempHandshake = "Handshake from client"; // will replace with an actual handshake message later
-
-        // 32-byte handshake message
-        byte[] handshake = new byte[32];
-        // 18-byte string header
-        byte[] header = "P2PFILESHARINGPROJ".getBytes();
-        // 10-byte zero bits
-        byte[] zeroBits = new byte[10];
-        // 4-byte peerID
-
-        ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.put(header);
-        buffer.put(zeroBits);
-        buffer.putInt(clientID);
-        System.out.println(Arrays.toString(buffer.array()));
-
-        sendMessage(buffer.array(), socket);
+    public void sendHandshake(Socket socket) {
+        try {
+            byte[] handshake = "P2PFILESHARINGPROJ".getBytes();
+            byte[] zeroBits = new byte[10]; // Ensure zero initialization
+            ByteBuffer buffer = ByteBuffer.allocate(32);
+            buffer.put(handshake);
+            buffer.put(zeroBits);
+            buffer.putInt(clientID); // Use serverID or another unique identifier
+            socketOutput.writeObject(buffer.array()); // Send the handshake
+            socketOutput.flush();
+            System.out.println("Handshake sent: " + Arrays.toString(buffer.array()));
+        } catch (IOException e) {
+            System.out.println("Failed to send handshake: " + e.getMessage());
+        }
     }
+
 
     public boolean readHandshake(byte[] handshakeMessage){
         // byte buffer to parse the handshake message
@@ -152,28 +144,30 @@ public class tcp_client {
         }
     }
 
-    public void maintainConnection() {
+    public void maintainConnection(Socket requestSocket) {
         try {
-            int i = 0;
+            sendHandshake(requestSocket);
+            Object response;
+            response = socketInput.readObject();
+            if (response instanceof byte[]){
+                readHandshake((byte[]) response);
+            }
             while (true) {
-                i++;
-//                // Example sending a message to server
-//                socketOutput.writeObject("Hello from Client " + i + ": " + clientID);
-//                socketOutput.flush();
-//
-                // Waiting for a response
-//                String response = (String) socketInput.readObject();
-//                System.out.println("Response from server: " + response);
-//
-//                // Check for termination condition
-//                if (response.equals("exit")) {
-//                    break;
-//                }
-//                if (i == 20){
-//                    socketOutput.writeObject("exit");
-//                    break;
-//                }
-//                i++;
+                // Read an object from the stream
+                response = socketInput.readObject();
+
+                // Handle different types of responses appropriately
+                if (response instanceof String) {
+                    System.out.println("Response from server: " + response);
+                    // Example check for termination condition
+                    if (((String) response).equals("exit")) {
+                        break;
+                    }
+                } else if (response instanceof byte[]) {
+                    System.out.println("Received byte array from server, length: " + ((byte[]) response).length);
+                    // Additional handling for byte arrays if needed
+                }
+                // Add handling for other expected types if necessary
             }
         } catch (Exception e) {
             System.out.println("Communication error: " + e.getMessage());

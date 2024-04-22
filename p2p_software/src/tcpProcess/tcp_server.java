@@ -3,6 +3,7 @@ import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.util.Arrays;
 // Contains the "server" capabilities of a peer (uploading files to other peers)
 
 public class tcp_server
@@ -11,7 +12,7 @@ public class tcp_server
     public int port;
     public int serverID;
     ServerSocket server;
-    Socket socket;
+//    Socket socket;
 
     public tcp_server(int port, int id){
         this.port = port;
@@ -52,20 +53,32 @@ public class tcp_server
                 socketOutput.flush();
                 socketInput = new ObjectInputStream(clientSocket.getInputStream());
 
-//                sendHandshake(clientSocket); // Send a handshake upon connecting
+                sendHandshake(clientSocket); // Send a handshake upon connecting
+                Object response;
+                response = socketInput.readObject();
+                if (response instanceof byte[]){
+                    readHandshake((byte[]) response);
+                }
                 while (true) {
-//                    Object message = input.readObject();
-//                    if (message instanceof String) {
-//                        System.out.println("Received: " + message);
-//                        output.writeObject("Ack: " + message);
-//                        output.flush();
-//                    }
-//                    if (message.equals("exit")) {
-//                        break;
-//                    }
+                    // Read an object from the stream
+                    response = socketInput.readObject();
+
+                    // Handle different types of responses appropriately
+                    if (response instanceof String) {
+                        System.out.println("Response from server: " + response);
+                        // Example check for termination condition
+                        if (((String) response).equals("exit")) {
+                            break;
+                        }
+                    } else if (response instanceof byte[]) {
+                        System.out.println("Received byte array from server, length: " + ((byte[]) response).length);
+                        // Additional handling for byte arrays if needed
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("Error handling client [" + clientSocket + "]: " + e.getMessage());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             } finally {
                 try {
                     clientSocket.close();
@@ -109,21 +122,25 @@ public class tcp_server
             System.out.println("See you later client! Closing connection");
             socketInput.close();
             socketOutput.close();
-            socket.close();
+//            socket.close();
         }
 
         public void sendHandshake(Socket socket) {
-            ByteBuffer buffer = ByteBuffer.allocate(32);
-            byte[] header = "P2PFILESHARINGPROJ".getBytes();
-            byte[] zeroBits = new byte[10]; // Ensure this is zero-initialized
-            int peerID = serverID; // Assuming `serverID` is available here
-
-            buffer.put(header);
-            buffer.put(zeroBits);
-            buffer.putInt(peerID);
-
-            sendMessage(buffer.array(), socket);
+            try {
+                byte[] handshake = "P2PFILESHARINGPROJ".getBytes();
+                byte[] zeroBits = new byte[10]; // Ensure zero initialization
+                ByteBuffer buffer = ByteBuffer.allocate(32);
+                buffer.put(handshake);
+                buffer.put(zeroBits);
+                buffer.putInt(serverID); // Use serverID or another unique identifier
+                socketOutput.writeObject(buffer.array()); // Send the handshake
+                socketOutput.flush();
+                System.out.println("Handshake sent: " + Arrays.toString(buffer.array()));
+            } catch (IOException e) {
+                System.out.println("Failed to send handshake: " + e.getMessage());
+            }
         }
+
     }
 
     public boolean readHandshake(byte[] handshakeMessage){
