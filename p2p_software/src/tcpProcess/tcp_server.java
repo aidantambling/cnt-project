@@ -59,6 +59,9 @@ public class tcp_server
                 socketOutput.flush();
                 socketInput = new ObjectInputStream(clientSocket.getInputStream());
 
+                boolean[] myBitfield = fileManager.getBitfield();
+                boolean[] otherBitfield;
+
                 sendHandshake(clientSocket); // Send a handshake upon connecting
                 Object response;
                 response = socketInput.readObject();
@@ -66,20 +69,17 @@ public class tcp_server
                     readHandshake((byte[]) response);
                 }
 
+                //TODO: check if the other peer (otherPeerID) is the "right neighbor"
+
                 // send bitfield right after handshake
                 sendBitfield(clientSocket);
-//                receiveBitfield(clientSocket);
 
-                // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
-
-                //TODO: reciprocate this in tcp_client
                 while (true) {
                     response = socketInput.readObject();
 
                     if (response instanceof byte[]){
                         ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
                         byte messageType = buffer.get();
-//                        byte[] remainingBytes = new byte[buffer.remaining()];
                         if (messageType == 0){ // choke message
 
                         }
@@ -87,7 +87,7 @@ public class tcp_server
 
                         }
                         else if (messageType == 2){ // interested message
-
+                            System.out.println(otherPeerID + " is indicating interest!");
                         }
                         else if (messageType == 3){ // not-interested message
 
@@ -97,7 +97,20 @@ public class tcp_server
                         }
                         else if (messageType == 5){ // bitfield message
                             System.out.println("Bitfield message received.");
-                            receiveBitfield(buffer.array());
+                            otherBitfield = receiveBitfield(buffer.array());
+                            //TODO: check the pieces this peer lacks, and send "interested" message
+                            // interested just indicates general interest in the other peer.
+                            for (int i = 0; i < myBitfield.length; i++){
+                                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
+//                                Request request = new Request(i);
+//                                byte[] requestBytes = request.toBytes();
+//                                socketOutput.writeObject(requestBytes);
+//                                socketOutput.flush();
+                                    System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
+                                    sendInterested();
+                                    break;
+                                }
+                            }
                         }
                         else if (messageType == 6){ // request message
                             System.out.println("We received a request");
@@ -155,6 +168,13 @@ public class tcp_server
             buffer.put(pieceData);
             out.writeObject(buffer.array());
             out.flush();
+        }
+
+        public void sendInterested() throws IOException {
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            buffer.put((byte) 2); // interested code
+            socketOutput.writeObject(buffer.array());
+            socketOutput.flush();
         }
 
         public byte[] booleanArrayToBytes(boolean[] bools) {

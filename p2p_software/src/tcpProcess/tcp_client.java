@@ -171,6 +171,12 @@ public class tcp_client {
         }
     }
 
+    public void sendInterested() throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(1);
+        buffer.put((byte) 2); // interested code
+        socketOutput.writeObject(buffer.array());
+        socketOutput.flush();
+    }
     public void maintainConnection(Socket requestSocket) {
         try {
             sendHandshake(requestSocket);
@@ -182,13 +188,13 @@ public class tcp_client {
 
             // send bitfield right after handshake
             sendBitfield(requestSocket);
-//            boolean[] otherBitfield = receiveBitfield(requestSocket);
-
-            // TODO: peers need to be able to request pieces they lack, and respond to requests for pieces they own
+            boolean[] otherBitfield;
 
             // request missing pieces
             // TODO: implement this in server, too.
             boolean[] myBitfield = fileManager.getBitfield();
+
+            // improper request submitter - used until better algorithms implemented
 //            for (int i = 0; i < myBitfield.length; i++){
 //                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
 //                    Request request = new Request(i);
@@ -215,11 +221,27 @@ public class tcp_client {
 //                    System.out.println("Received byte array from peer " + otherPeerID + ", length: " + ((byte[]) response).length);
                     ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
                     byte messageType = buffer.get();
-                    if (messageType == 5){ // bitfield message
-                        System.out.println("Bitfield message received.");
-                        receiveBitfield(buffer.array());
+                    if (messageType == 2){
+                        System.out.println(otherPeerID + " is indicating interest!");
                     }
-                    if (messageType == 7 && !fileManager.hasAllPieces()){
+                    else if (messageType == 5){ // bitfield message
+                        System.out.println("Bitfield message received.");
+                        otherBitfield = receiveBitfield(buffer.array());
+                        //TODO: check the pieces this peer lacks, and send "interested" message
+                        // interested just indicates general interest in the other peer.
+                        for (int i = 0; i < myBitfield.length; i++){
+                            if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
+//                                Request request = new Request(i);
+//                                byte[] requestBytes = request.toBytes();
+//                                socketOutput.writeObject(requestBytes);
+//                                socketOutput.flush();
+                                System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
+                                sendInterested();
+                                break;
+                            }
+                        }
+                    }
+                    else if (messageType == 7 && !fileManager.hasAllPieces()){
 //                        System.out.println("Byte array was a piece message");
                         int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
                         byte[] pieceData = new byte[buffer.remaining()];
@@ -237,15 +259,15 @@ public class tcp_client {
                     }
                 }
 
-//                for (int i = 0; i < fileManager.getBitfield().length; i++){
-//                    if (!fileManager.hasPiece(i)){ // doesn't have this part of the file yet
-//                        break;
-//                    }
-//                    if (i == fileManager.getBitfield().length - 1){
-//                        System.out.println("Bitfield is complete!!!!");
-//                        fileManager.writeToFile();
-//                    }
-//                }
+                for (int i = 0; i < fileManager.getBitfield().length; i++){
+                    if (!fileManager.hasPiece(i)){ // doesn't have this part of the file yet
+                        break;
+                    }
+                    if (i == fileManager.getBitfield().length - 1){
+                        System.out.println("Bitfield is complete!!!!");
+                        fileManager.writeToFile();
+                    }
+                }
 
             }
         } catch (Exception e) {
