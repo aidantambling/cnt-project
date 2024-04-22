@@ -10,8 +10,6 @@ public class tcp_server
 
     public int port;
     public int serverID;
-    ObjectInputStream socketInput;
-    ObjectOutputStream socketOutput;
     ServerSocket server;
     Socket socket;
 
@@ -20,72 +18,113 @@ public class tcp_server
         this.serverID = id;
     }
 
-    public void launchServer(){
-        try
-        {
-            this.server = new ServerSocket(port); //TODO: get port number from configs
+    public void launchServer() {
+        try {
+            server = new ServerSocket(port);
             InetAddress local = InetAddress.getLocalHost();
             System.out.println("Peer " + serverID + " has launched a TCP Server with port " + port);
             System.out.println("and IP " + local.getHostAddress() + " on peer " + serverID);
 
-            // program stops here until a client issues a connection request
-            this.socket = server.accept();
-            System.out.println("Incoming connection detected from client");
-
-            // takes input from the client socket
-            this.socketOutput = new ObjectOutputStream(socket.getOutputStream());
-            this.socketInput = new ObjectInputStream((socket.getInputStream()));
-
-            // receive handshake
-            boolean handshakeStatus;
-            try {
-                handshakeStatus = readHandshake((byte[]) socketInput.readObject());
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-            if (!handshakeStatus){
-                System.out.println("The handshake was unsuccessful.");
-                return;
-            }
-            System.out.println("The handshake was successful.");
-//            sendHandshake(this.socket);
-
-            // Keep listening for messages
             while (true) {
-                Object message = socketInput.readObject();
-                if (message instanceof String) { // Assuming message is a String
-                    System.out.println("Received: " + message);
-                    // Process message or respond
-                    socketOutput.writeObject("Ack: " + message);
-                    socketOutput.flush();
-                }
-                // Implement your protocol's termination condition here
-                if (message.equals("exit")) {
-                    break;
-                }
+                Socket clientSocket = server.accept();
+                System.out.println("Incoming connection detected from client");
+
+                new Thread(new ClientHandler(clientSocket)).start();
             }
-        } catch(IOException i)
-        {
+        } catch (IOException i) {
             System.out.println("Error in connection with client or input detection");
             throw new RuntimeException(i);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
-    public void sendHandshake(Socket socket) {
-        ByteBuffer buffer = ByteBuffer.allocate(32);
-        byte[] header = "P2PFILESHARINGPROJ".getBytes();
-        byte[] zeroBits = new byte[10]; // Ensure this is zero-initialized
-        int peerID = serverID; // Assuming `serverID` is available here
+    class ClientHandler implements Runnable {
+        private Socket clientSocket;
+        ObjectInputStream socketInput;
+        ObjectOutputStream socketOutput;
 
-        buffer.put(header);
-        buffer.put(zeroBits);
-        buffer.putInt(peerID);
+        public ClientHandler(Socket socket) {
+            this.clientSocket = socket;
+        }
 
-        sendMessage(buffer.array(), socket);
+        public void run() {
+            try {
+                socketOutput = new ObjectOutputStream(clientSocket.getOutputStream());
+                socketOutput.flush();
+                socketInput = new ObjectInputStream(clientSocket.getInputStream());
+
+//                sendHandshake(clientSocket); // Send a handshake upon connecting
+                while (true) {
+//                    Object message = input.readObject();
+//                    if (message instanceof String) {
+//                        System.out.println("Received: " + message);
+//                        output.writeObject("Ack: " + message);
+//                        output.flush();
+//                    }
+//                    if (message.equals("exit")) {
+//                        break;
+//                    }
+                }
+            } catch (IOException e) {
+                System.out.println("Error handling client [" + clientSocket + "]: " + e.getMessage());
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    System.out.println("Error closing connection for client [" + clientSocket + "]");
+                }
+            }
+        }
+
+        public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
+            // socket validation
+            if (socket == null){
+                System.out.println("The message cannot be sent - the socket could not be found");
+                return;
+            }
+            if (socket.isClosed()){
+                System.out.println("The message cannot be sent - the socket is already closed.");
+                return;
+            }
+            // message validation
+            if (message.length == 0){
+                System.out.println("The message is empty - it cannot be sent.");
+                return;
+            }
+            try {
+                socketOutput.flush();
+                socketOutput.writeObject(message);
+            } catch (SocketException se) {
+                // potential causes: slow network, firewall, idle connection, or code errors
+                System.out.println("Error was encountered while trying to access the socket");
+            } catch (EOFException eof) {
+                // end of the stream was unexpectedly reached
+                System.out.println("Error was encountered while trying to access the output stream");
+            } catch (IOException e){
+                // most general IO exception handling
+                System.out.println("Error was encountered while trying to manage IO operations");
+            }
+        }
+
+        public void closeServer() throws IOException {
+            System.out.println("See you later client! Closing connection");
+            socketInput.close();
+            socketOutput.close();
+            socket.close();
+        }
+
+        public void sendHandshake(Socket socket) {
+            ByteBuffer buffer = ByteBuffer.allocate(32);
+            byte[] header = "P2PFILESHARINGPROJ".getBytes();
+            byte[] zeroBits = new byte[10]; // Ensure this is zero-initialized
+            int peerID = serverID; // Assuming `serverID` is available here
+
+            buffer.put(header);
+            buffer.put(zeroBits);
+            buffer.putInt(peerID);
+
+            sendMessage(buffer.array(), socket);
+        }
     }
-
 
     public boolean readHandshake(byte[] handshakeMessage){
         // byte buffer to parse the handshake message
@@ -122,36 +161,6 @@ public class tcp_server
         return true;
     }
 
-    public void sendMessage(byte[] message, Socket socket){ // message is a string temporarily - will replace with one of the actual message types later
-        // socket validation
-        if (socket == null){
-            System.out.println("The message cannot be sent - the socket could not be found");
-            return;
-        }
-        if (socket.isClosed()){
-            System.out.println("The message cannot be sent - the socket is already closed.");
-            return;
-        }
-        // message validation
-        if (message.length == 0){
-            System.out.println("The message is empty - it cannot be sent.");
-            return;
-        }
-        try {
-            socketOutput.flush();
-            socketOutput.writeObject(message);
-        } catch (SocketException se) {
-            // potential causes: slow network, firewall, idle connection, or code errors
-            System.out.println("Error was encountered while trying to access the socket");
-        } catch (EOFException eof) {
-            // end of the stream was unexpectedly reached
-            System.out.println("Error was encountered while trying to access the output stream");
-        } catch (IOException e){
-            // most general IO exception handling
-            System.out.println("Error was encountered while trying to manage IO operations");
-        }
-    }
-
 
 //    public void communicate(){
 //        String message = "";
@@ -175,12 +184,6 @@ public class tcp_server
 //        }
 //    }
 
-    public void closeServer() throws IOException {
-        System.out.println("See you later client! Closing connection");
-        socketInput.close();
-        socketOutput.close();
-        socket.close();
-    }
     public static void main(String args[])
     {
 

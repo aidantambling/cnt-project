@@ -1,7 +1,7 @@
-# Define a Makefile for compiling Java TCP client, server, and peer components
+# Define a Makefile for compiling Java TCP client, server, peer components, and parsers
 
 # Target for all components
-all: TCPClient TCPServer Peer PeerMessages
+all: TCPClient TCPServer Peer PeerMessages ConfigParser PeerInfoParser
 
 # Compile the TCP client
 TCPClient: tcpProcess/TCP_Client.class
@@ -25,12 +25,24 @@ Peer/PeerProcess.class: Peer/PeerProcess.java
 	javac Peer/PeerProcess.java
 
 # Compile the Peer Messages
-PeerMessages: $(addprefix Peer/Messages/, bitfield.class choke.class have.class interested.class notInterested.class piece.class request.class unchoke.class)
+PeerMessages: Peer/Messages/Bitfield.class Peer/Messages/Choke.class Peer/Messages/Have.class Peer/Messages/Interested.class Peer/Messages/NotInterested.class Peer/Messages/Message.class Peer/Messages/Piece.class Peer/Messages/Request.class Peer/Messages/Unchoke.class
 
 Peer/Messages/%.class: Peer/Messages/%.java
 	javac $<
 
+# Compile ConfigParser
+ConfigParser: FileManager/configParser.class
+
+FileManager/configParser.class: FileManager/configParser.java
+	javac FileManager/configParser.java
+
+# Compile PeerInfoParser
+PeerInfoParser: FileManager/peerInfoParser.class
+
+FileManager/peerInfoParser.class: FileManager/peerInfoParser.java
+	javac FileManager/peerInfoParser.java
 
 # Clean the build
 clean:
-	rm -f tcpProcess/*.class Peer/*.class Peer/Messages/*.class
+	rm -f tcpProcess/*.class Peer/*.class Peer/Messages/*.class FileManager/*.class
+

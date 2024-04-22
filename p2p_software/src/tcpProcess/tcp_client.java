@@ -48,7 +48,7 @@ public class tcp_client {
             throw new RuntimeException(e);
         }
         // send handshake
-        sendHandshake(requestSocket);
+//        sendHandshake(requestSocket);
         // receive handshake
 //        boolean handshakeStatus;
 //        try {
@@ -156,23 +156,24 @@ public class tcp_client {
         try {
             int i = 0;
             while (true) {
-                // Example sending a message to server
-                socketOutput.writeObject("Hello from Client " + i + ": " + clientID);
-                socketOutput.flush();
-
-                // Waiting for a response
-                String response = (String) socketInput.readObject();
-                System.out.println("Response from server: " + response);
-
-                // Check for termination condition
-                if (response.equals("exit")) {
-                    break;
-                }
-                if (i == 20){
-                    socketOutput.writeObject("exit");
-                    break;
-                }
                 i++;
+//                // Example sending a message to server
+//                socketOutput.writeObject("Hello from Client " + i + ": " + clientID);
+//                socketOutput.flush();
+//
+                // Waiting for a response
+//                String response = (String) socketInput.readObject();
+//                System.out.println("Response from server: " + response);
+//
+//                // Check for termination condition
+//                if (response.equals("exit")) {
+//                    break;
+//                }
+//                if (i == 20){
+//                    socketOutput.writeObject("exit");
+//                    break;
+//                }
+//                i++;
             }
         } catch (Exception e) {
             System.out.println("Communication error: " + e.getMessage());
