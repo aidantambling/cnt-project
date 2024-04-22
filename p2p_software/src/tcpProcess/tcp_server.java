@@ -70,6 +70,26 @@ public class tcp_server
                 }
 
                 //TODO: check if the other peer (otherPeerID) is the "right neighbor"
+                // choke and unchoke:
+                // the peer uploads only to preferred neighbors (at most k of them) and an optimistically unchoked one
+                // the preferred neighbors are determined every p seconds
+                // to do this, calculate downloading rate of each neighbors over the previous interval
+                // among neighbors that are interested, pick k neighbors that downloaded at highest rate (if 2x, randomly)
+                // send unchoke messages to those neighbors (expect requests) and choke the others
+                // HOWEVER: if peer has a complete file, it determines preferred neighbors randomly among the interested
+
+                //TODO: optimistic unchoking
+
+                //TODO: IMPLEMENT THE ABOVE via a ConnectionManager class that a Peer has an object of. The connectionManager
+                // oversees the peer as a whole, and can follow the algorithm above to determine peers etc. It can be passed
+                // down to both server(here) and client. and the server and client can update it with rates and can also monitor
+                // it to determine if any choking / unchoking happens
+
+                //TODO: this approach is to centralize the monitoring of a peer's connections. our classes tcp_client and
+                // tcp_server are split in a way that a peer has some connections on one, some on the other. so to keep state
+                // between them, we need this connectionManager. it is needed in a similar sense as fileManager is needed
+                // to update the bitfields consistently across tcp_server/tcp_client.
+
 
                 // send bitfield right after handshake
                 sendBitfield(clientSocket);
@@ -90,7 +110,7 @@ public class tcp_server
                             System.out.println(otherPeerID + " is indicating interest!");
                         }
                         else if (messageType == 3){ // not-interested message
-
+                            System.out.println(otherPeerID + " is not interested.");
                         }
                         else if (messageType == 4){ // have message
 
@@ -109,6 +129,10 @@ public class tcp_server
                                     System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
                                     sendInterested();
                                     break;
+                                }
+                                if (i == myBitfield.length - 1){ // we have checked every bit from the other bitfield, and we need none...
+                                    System.out.println("Indicating a lack of interest to peer " + otherPeerID + ": " + i);
+                                    sendNotInterested();
                                 }
                             }
                         }
@@ -161,9 +185,16 @@ public class tcp_server
             }
         }
 
+        public void sendNotInterested() throws IOException {
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            buffer.put((byte) 3); // not intersted code
+            socketOutput.writeObject(buffer.array());
+            socketOutput.flush();
+        }
+
         public void sendPiece(ObjectOutputStream out, int pieceIndex, byte[] pieceData) throws IOException {
             ByteBuffer buffer = ByteBuffer.allocate(5 + pieceData.length);
-            buffer.put((byte) 7);  // 7 is the defined code for a piece message.
+            buffer.put((byte) 7);  // piece message code
             buffer.putInt(pieceIndex);
             buffer.put(pieceData);
             out.writeObject(buffer.array());
@@ -201,8 +232,7 @@ public class tcp_server
         }
 
         public boolean[] receiveBitfield(byte[] data) {
-            // Assuming the first byte is the message type and is skipped when this method is called.
-            byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length); // Skip the first byte (message type)
+            byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length);
             boolean[] bitfield = new boolean[bitfieldBytes.length];
             for (int i = 0; i < bitfieldBytes.length; i++) {
                 bitfield[i] = bitfieldBytes[i] == 1;
@@ -211,7 +241,7 @@ public class tcp_server
             for (boolean b : bitfield) {
                 System.out.print(b ? "1" : "0");
             }
-            System.out.println(); // Print newline for better format
+            System.out.println();
 
             return bitfield;
         }

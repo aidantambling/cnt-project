@@ -52,12 +52,12 @@ public class tcp_client {
     public void sendHandshake(Socket socket) {
         try {
             byte[] handshake = "P2PFILESHARINGPROJ".getBytes();
-            byte[] zeroBits = new byte[10]; // Ensure zero initialization
+            byte[] zeroBits = new byte[10];
             ByteBuffer buffer = ByteBuffer.allocate(32);
             buffer.put(handshake);
             buffer.put(zeroBits);
-            buffer.putInt(clientID); // Use serverID or another unique identifier
-            socketOutput.writeObject(buffer.array()); // Send the handshake
+            buffer.putInt(clientID);
+            socketOutput.writeObject(buffer.array());
             socketOutput.flush();
             System.out.println("Handshake sent: " + Arrays.toString(buffer.array()));
         } catch (IOException e) {
@@ -89,8 +89,7 @@ public class tcp_client {
     }
 
     public boolean[] receiveBitfield(byte[] data) {
-        // Assuming the first byte is the message type and is skipped when this method is called.
-        byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length); // Skip the first byte (message type)
+        byte[] bitfieldBytes = Arrays.copyOfRange(data, 1, data.length);
         boolean[] bitfield = new boolean[bitfieldBytes.length];
         for (int i = 0; i < bitfieldBytes.length; i++) {
             bitfield[i] = bitfieldBytes[i] == 1;
@@ -99,7 +98,7 @@ public class tcp_client {
         for (boolean b : bitfield) {
             System.out.print(b ? "1" : "0");
         }
-        System.out.println(); // Print newline for better format
+        System.out.println();
 
         return bitfield;
     }
@@ -177,6 +176,12 @@ public class tcp_client {
         socketOutput.writeObject(buffer.array());
         socketOutput.flush();
     }
+    public void sendNotInterested() throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(1);
+        buffer.put((byte) 4); // interested code
+        socketOutput.writeObject(buffer.array());
+        socketOutput.flush();
+    }
     public void maintainConnection(Socket requestSocket) {
         try {
             sendHandshake(requestSocket);
@@ -224,6 +229,9 @@ public class tcp_client {
                     if (messageType == 2){
                         System.out.println(otherPeerID + " is indicating interest!");
                     }
+                    else if (messageType == 3){
+                        System.out.println(otherPeerID + " is not interested.");
+                    }
                     else if (messageType == 5){ // bitfield message
                         System.out.println("Bitfield message received.");
                         otherBitfield = receiveBitfield(buffer.array());
@@ -238,6 +246,10 @@ public class tcp_client {
                                 System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
                                 sendInterested();
                                 break;
+                            }
+                            if (i == myBitfield.length - 1){ // we have checked every bit from the other bitfield, and we need none...
+                                System.out.println("Indicating a lack of interest to peer " + otherPeerID);
+                                sendNotInterested();
                             }
                         }
                     }
