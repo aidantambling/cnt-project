@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 
 public class PeerConnectionManager {
     public ConcurrentHashMap<Integer, ConnectionInfo> connections = new ConcurrentHashMap<>();
+    private Set<Integer> requestedPieces; // Tracks pieces that have been requested across all connections
+
     private Timer timer;
     public int unchokingInterval;
     public int optimisticUnchokingInterval;
@@ -42,9 +44,25 @@ public class PeerConnectionManager {
         this.timer = new Timer();
         this.numNeighbors = numNeighbors;
         this.hasCompleteFile = false;
+        requestedPieces = ConcurrentHashMap.newKeySet();
 
         // schedule the recomputation task evey unchokingInterval seconds;
         this.timer.schedule(new ChokeUnchokeTask(this), 0, 1000L * unchokingInterval);
+    }
+
+    public synchronized int requestPiece(List<Integer> availablePieces) {
+        Collections.shuffle(availablePieces); // randomize the order of available pieces
+        for (Integer pieceIndex : availablePieces) { // we iterate thru them...
+            if (!requestedPieces.contains(pieceIndex)) { // until we find one this peer has not requested.
+                requestedPieces.add(pieceIndex);
+                return pieceIndex;
+            }
+        }
+        return -1;
+    }
+
+    public synchronized void pieceReceived(int pieceIndex) {
+        requestedPieces.remove(pieceIndex);
     }
 
     class ChokeUnchokeTask extends TimerTask {
@@ -55,6 +73,7 @@ public class PeerConnectionManager {
         }
 
         public void run() {
+            printConnections();
             manager.evaluatePeers();
             manager.connections.values().forEach(conn -> {
                 if (conn.isChoked()) {
@@ -71,7 +90,7 @@ public class PeerConnectionManager {
         //TODO: servers/clients need to let PCM know their download rate.
         // based on the rate, we re-evaluate the c/uc connections
         List<ConnectionInfo> interestedPeers = connections.values().stream()
-                .filter(ConnectionInfo::isInterested)  // Assuming there's a method to check if the peer is interested
+                .filter(ConnectionInfo::isInterested)
                 .collect(Collectors.toList());
 
         if (this.hasCompleteFile) {
@@ -120,6 +139,7 @@ public class PeerConnectionManager {
             else {
                 System.out.print( " server ");
             }
+            System.out.println("And that connection is: " + (connection.isChoked ? "choked" : "unchoked"));
         }
     }
 
@@ -168,6 +188,7 @@ public class PeerConnectionManager {
         public boolean isInterested(){
             return isInterested;
         }
+
     }
 
 }

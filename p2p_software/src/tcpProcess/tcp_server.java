@@ -1,11 +1,13 @@
 package tcpProcess;
 import Peer.FileManager;
+import Peer.Messages.Request;
 import Peer.PeerConnectionManager;
 
 import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 // Contains the "server" capabilities of a peer (uploading files to other peers)
 
@@ -52,8 +54,9 @@ public class tcp_server
 
         public int otherPeerID;
 
-        public ClientHandler(Socket socket) {
+        public ClientHandler(Socket socket) throws SocketException {
             this.clientSocket = socket;
+            clientSocket.setSoTimeout(5000);
         }
 
         public void run() {
@@ -99,97 +102,121 @@ public class tcp_server
 
                 boolean isChoked = true;
                 boolean areWeChoked = true;
+                boolean wait = false;
                 while (true) {
-                    response = socketInput.readObject();
+                    try {
 
-                    boolean newChoked = connectionManager.connections.get(otherPeerID).isChoked();
-                    if (newChoked != isChoked){ // choke status for this thread was changed
-                        if (newChoked){ // if newChoked is true, we are setting this thread's peer to choked
-                            sendChokeMessage();
-                        }
-                        else { // newChoked is false, we are setting this thread's peer to unchoked
-                            sendUnchokeMessage();
-                        }
-                        isChoked = newChoked;
-                    }
-
-                    boolean[] currentBitfield = fileManager.getBitfield();
-                    for (int i = 0; i < currentBitfield.length; i++){
-                        if (currentBitfield[i] && !myBitfield[i]){ // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
-                            myBitfield[i] = true;
-                            sendHaveMessage(i); // send a have message to the other peers!
-                        }
-                    }
-
-                    //TODO: requesting...
-                    // when we are unchoked (see above), send a request for a missing piece THAT HAS NOT BEEN REQUESTED OF OTHER NEIGHBORS
-                    // upon unchoke: randomly select a piece from other peer's bitmap that we lack, and that we have not requested yet
-                    // we only send another request after fully downloading the piece
-                    // repeat this until we are choked or B lacks any more interesting pieces
-                    // consider the case where we request a piece but are choked before other peer responds - we don't get the piece
-
-                    if (response instanceof byte[]){
-                        ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
-                        byte messageType = buffer.get();
-                        if (messageType == 0){ // choke message
-                            System.out.println("The other peer has choked us.");
-                            areWeChoked = true;
-                        }
-                        else if (messageType == 1){ // unchoke message
-                            System.out.println("The other peer has choked us.");
-                            areWeChoked = false;
-                        }
-                        else if (messageType == 2){ // interested message
-                            System.out.println(otherPeerID + " is indicating interest!");
-                            connectionManager.peerInterested(otherPeerID, true);
-                        }
-                        else if (messageType == 3){ // not-interested message
-                            System.out.println(otherPeerID + " is not interested.");
-                            connectionManager.peerInterested(otherPeerID, false);
-                        }
-                        else if (messageType == 4){ // have message
-                            // update bitfield
-                            int newBit = readHaveMessage(buffer.array());
-                            otherBitfield[newBit] = true;
-                            if (!myBitfield[newBit]){ // if we don't have the new bit they got, send interested
-                                sendInterested();
+                        boolean newChoked = connectionManager.connections.get(otherPeerID).isChoked();
+                        if (newChoked != isChoked) { // choke status for this thread was changed
+                            if (newChoked) { // if newChoked is true, we are setting this thread's peer to choked
+                                sendChokeMessage();
+                            } else { // newChoked is false, we are setting this thread's peer to unchoked
+                                sendUnchokeMessage();
                             }
-                            System.out.println(otherPeerID + " has a new piece at " + newBit + "!");
+                            isChoked = newChoked;
                         }
-                        else if (messageType == 5){ // bitfield message
-                            System.out.println("Bitfield message received.");
-                            otherBitfield = receiveBitfield(buffer.array());
-                            for (int i = 0; i < myBitfield.length; i++){
-                                if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
-                                    System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
+
+                        boolean[] currentBitfield = fileManager.getBitfield();
+                        for (int i = 0; i < currentBitfield.length; i++) {
+                            if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
+                                myBitfield[i] = true;
+                                sendHaveMessage(i); // send a have message to the other peers!
+                            }
+                        }
+
+                        if (!areWeChoked && !wait) {
+                            ArrayList<Integer> missingPieces = new ArrayList<>();
+                            for (int i = 0; i < myBitfield.length; i++) {
+                                if (!myBitfield[i] && otherBitfield[i]) {
+                                    missingPieces.add(i);
+                                }
+                            }
+                            if (!missingPieces.isEmpty()) {
+                                int pieceToRequest = connectionManager.requestPiece(missingPieces);
+                                if (pieceToRequest != -1) {
+                                    Request request = new Request(pieceToRequest);
+                                    byte[] requestBytes = request.toBytes();
+                                    socketOutput.writeObject(requestBytes);
+                                    socketOutput.flush();
+                                    System.out.println("Requested piece from peer " + otherPeerID + ": " + pieceToRequest);
+                                    wait = true; // we need to wait until we get the data from the peer.
+                                }
+                            }
+                        }
+
+                        response = socketInput.readObject();
+                        System.out.println("Identification");
+
+                        //TODO: requesting...
+                        // when we are unchoked (see above), send a request for a missing piece THAT HAS NOT BEEN REQUESTED OF OTHER NEIGHBORS
+                        // upon unchoke: randomly select a piece from other peer's bitmap that we lack, and that we have not requested yet
+                        // we only send another request after fully downloading the piece
+                        // repeat this until we are choked or B lacks any more interesting pieces
+                        // consider the case where we request a piece but are choked before other peer responds - we don't get the piece
+
+                        if (response instanceof byte[]) {
+                            ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
+                            byte messageType = buffer.get();
+                            if (messageType == 0) { // choke message
+                                System.out.println("The other peer has choked us.");
+                                areWeChoked = true;
+                            } else if (messageType == 1) { // unchoke message
+                                System.out.println("The other peer has choked us.");
+                                areWeChoked = false;
+                            } else if (messageType == 2) { // interested message
+                                System.out.println(otherPeerID + " is indicating interest!");
+                                connectionManager.peerInterested(otherPeerID, true);
+                            } else if (messageType == 3) { // not-interested message
+                                System.out.println(otherPeerID + " is not interested.");
+                                connectionManager.peerInterested(otherPeerID, false);
+                            } else if (messageType == 4) { // have message
+                                // update bitfield
+                                int newBit = readHaveMessage(buffer.array());
+                                otherBitfield[newBit] = true;
+                                if (!myBitfield[newBit]) { // if we don't have the new bit they got, send interested
                                     sendInterested();
-                                    break;
                                 }
-                                if (i == myBitfield.length - 1){ // we have checked every bit from the other bitfield, and we need none...
-                                    System.out.println("Indicating a lack of interest to peer " + otherPeerID + ": " + i);
-                                    sendNotInterested();
+                                System.out.println(otherPeerID + " has a new piece at " + newBit + "!");
+                            } else if (messageType == 5) { // bitfield message
+                                System.out.println("Bitfield message received.");
+                                otherBitfield = receiveBitfield(buffer.array());
+                                for (int i = 0; i < myBitfield.length; i++) {
+                                    if (!myBitfield[i] && otherBitfield[i]) { // other bitfield has a bit we lack...
+                                        System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
+                                        sendInterested();
+                                        break;
+                                    }
+                                    if (i == myBitfield.length - 1) { // we have checked every bit from the other bitfield, and we need none...
+                                        System.out.println("Indicating a lack of interest to peer " + otherPeerID + ": " + i);
+                                        sendNotInterested();
+                                    }
+                                }
+                            } else if (messageType == 6) { // request message
+                                System.out.println("We received a request");
+                                handleIncomingRequests(buffer.array(), socketOutput, fileManager);
+                            } else if (messageType == 7 && !fileManager.hasAllPieces()) { // piece message
+                                wait = false;
+                                int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
+                                byte[] pieceData = new byte[buffer.remaining()];
+                                buffer.get(pieceData);
+                                if (!fileManager.hasPiece(pieceIndex)) {
+                                    fileManager.storePiece(pieceIndex, pieceData);
+                                    System.out.println("Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
+                                    // send "have" message to all connected peers.
+                                } else {
+                                    System.out.println("We already have piece at index: " + pieceIndex + " - client for peer " + otherPeerID);
+                                }
+                                if (fileManager.hasAllPieces()) {
+                                    System.out.println("Bitfield is complete!!!!");
+                                    fileManager.writeToFile();
                                 }
                             }
                         }
-                        else if (messageType == 6){ // request message
-                            System.out.println("We received a request");
-                            handleIncomingRequests(buffer.array(), socketOutput, fileManager);
-                        }
-                        else if (messageType == 7 && !fileManager.hasAllPieces()){ // piece message
-                            int pieceIndex = buffer.getInt();  // Next 4 bytes: piece index
-                            byte[] pieceData = new byte[buffer.remaining()];
-                            buffer.get(pieceData);
-                            if (!fileManager.hasPiece(pieceIndex)) {
-                                fileManager.storePiece(pieceIndex, pieceData);
-                                System.out.println("Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
-                                // send "have" message to all connected peers.
-                            } else {
-                                System.out.println("We already have piece at index: " + pieceIndex + " - client for peer " + otherPeerID);
-                            }
-                            if (fileManager.hasAllPieces()){
-                                System.out.println("Bitfield is complete!!!!");
-                                fileManager.writeToFile();
-                            }
+                    }  catch (SocketTimeoutException ste) {
+                        // Log and handle timeout
+                        System.out.println("Read timed out, checking connection status...");
+                        if (!connectionManager.connections.get(otherPeerID).isChoked()) {
+
                         }
                     }
                 }
