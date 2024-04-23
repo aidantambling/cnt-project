@@ -20,14 +20,14 @@ public class peer {
   PeerConnectionManager connectionManager;
 
   // constructor to launch a peer object from peerProcess
-  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, int lastPeer){
+  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, int lastPeer, int numPeers){
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
 
 
     logger = new Logger(PeerId);
 
-    this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors, logger);
+    this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors, numPeers, logger);
     if (fileManager.hasAllPieces()){
       this.connectionManager.hasCompleteFile = true;
     }

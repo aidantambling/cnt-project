@@ -14,7 +14,6 @@ public class PeerProcess {
 
     static peer peer;
     private static FileManager fileManager;
-//    static byte[] fileData;
     static String directoryPath;
 
     public static void main(String[] args) throws IOException {
@@ -98,7 +97,7 @@ public class PeerProcess {
 //        Logger.initializeLogger(peerID);
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
-        peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager, configParser.getUnchokingInterval(), configParser.getOptimisticUnchokingInterval(), configParser.getNumberOfPrefferedNeighbors(), peerParser.peerInfoVector.get(peerParser.peerInfoVector.size() - 1).getPeerId());
+        peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager, configParser.getUnchokingInterval(), configParser.getOptimisticUnchokingInterval(), configParser.getNumberOfPrefferedNeighbors(), peerParser.peerInfoVector.get(peerParser.peerInfoVector.size() - 1).getPeerId(), peerParser.peerInfoVector.size());
 
         //TODO: begin server functioning
 

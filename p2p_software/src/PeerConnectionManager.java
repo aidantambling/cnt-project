@@ -43,8 +43,9 @@ public class PeerConnectionManager {
     public Logger logger;
 
     public boolean disconnect = false;
+    public int numPeers;
 
-    public PeerConnectionManager(int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, Logger logger) {
+    public PeerConnectionManager(int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, int numPeers, Logger logger) {
         System.out.println("Initializing PCM");
         this.unchokingInterval = unchokingInterval;
         this.optimisticUnchokingInterval = optimisticUnchokingInterval;
@@ -52,6 +53,7 @@ public class PeerConnectionManager {
         this.timer = new Timer();
         this.numNeighbors = numNeighbors;
         this.hasCompleteFile = false;
+        this.numPeers = 4; // TODO: determines number of peers that must have downloaded file before peers will disconnect. In general, should be set to numPeers.
         this.logger = logger;
         requestedPieces = ConcurrentHashMap.newKeySet();
 
@@ -104,7 +106,7 @@ public class PeerConnectionManager {
             }
         }
 
-        if (hasCompleteFile && allDownloaded && connections.values().size() > 1) { // this peer has the file, and so do the others
+        if (hasCompleteFile && allDownloaded && connections.values().size() == numPeers-1) { // this peer has the file, and so do the others
             // we should gracefully disconnect all peers now.
             System.out.println("All have been downloaded......");
             disconnect = true;
@@ -150,7 +152,7 @@ public class PeerConnectionManager {
 
 //        logger.changedOptimisticNeighbor(xxxx);
         //Handle optimistic choking
-//        optimisticallyUnchokeNeighbor();
+        optimisticallyUnchokeNeighbor();
     }
 
     public void optimisticallyUnchokeNeighbor() {
