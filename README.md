@@ -4,6 +4,62 @@ coded in Java
 
 This project involves building a Peer-to-Peer (P2P) file sharing application similar to BitTorrent.  
 
+# Individual Contributions
+
+Aidan Tambling: peerProcesses, peer data structure, communication between threads
+Fredderick Blanco: Logging, peer data structure, configuration parsing
+Gabriel Hunter Turmail: Optimistic unchoking
+
+# Details About Implemented Protocols
+
+PeerProcess.java creates a "Peer" object which then spawns threads with event loops to interact with other deployed peer objects. The peer.java class is where most of the project is implemented. Peer.java has two objects: tcp_server and tcp_client.
+- tcp_client: interacts with peers preceding this one
+- tcp_server: interacts with peers following this one
+The initial peer does not deploy a client, and the final peer does not deploy a server.
+
+A challenge of implementing this structure is that a peer manages some connections through its tcp_client object, and others through its tcp_server. This makes state management (e.g. bitfield, choking/unchoking) challenging, because the peer must act cohesively across these two objects
+- The tcp_server and tcp_client each have an event loop in them, where thread connections are maintained
+- To maintain state across tcp_client and tcp_server, FileManager.java and PeerConnectionManager.java are used. The fields and functions in these classes allow a peer to act in cohesion across the tcp_client and tcp_server
+- In retrospect, this was a questionable implementation decision. The challenges of maintaining state across multiple threads like this would have been far simpler without tcp_client or tcp_server (i.e., implementing the threading and TCP communication in peer.java).
+- Also, there is a good amount of redundancy between tcp_client and tcp_server.
+- Nevertheless, the decision was made and it was decided to not revise the structure once the program depended on it too heavily. The program works as intended, it just could have been implemented with more foresight.
+
+## tcp_client functions
+requestServer() - connect this client object to a given server
+sendHandshake() - send the server a handshake
+readHandshake() - receive the server's handshake
+sendBitfield() - send the server the bitfield
+receiveBitfield() - receive the server's bitfield
+booleanArrayToBytes() - helper function for encoding bitfield
+sendInterested() - send the server an interested message
+sendNotInterested() - send the server a not interested message
+sendHaveMessage() - send the server the index of a newly-received byte
+readHaveMessage() - read the server's index of newly-received byte
+sendChokeMessage() - choke the server
+sendUnchokeMessage() - unchoke the server
+handleIncomingRequests() - respond to a server's request
+sendPiece() - send an individual piece of data to the server
+maintainConnection() - operate a TCP connection with the server (event loop)
+closeClient() - terminate the connection
+
+## tcp_client functions
+launchServer() - await connection from a client
+sendHandshake() - send the client a handshake
+readHandshake() - receive the client's handshake
+sendBitfield() - send the client the bitfield
+receiveBitfield() - receive the client's bitfield
+booleanArrayToBytes() - helper function for encoding bitfield
+sendInterested() - send the client an interested message
+sendNotInterested() - send the client a not interested message
+sendHaveMessage() - send the client the index of a newly-received byte
+readHaveMessage() - read the client's index of newly-received byte
+sendChokeMessage() - choke the client
+sendUnchokeMessage() - unchoke the client
+handleIncomingRequests() - respond to a client's request
+sendPiece() - send an individual piece of data to the client
+run() - operate a TCP connection with the client (event loop)
+stopServer() - terminate the connection
+
 # Project Goal:
 
 The primary objective of this project is to implement a core functionality of BitTorrent, the choking-unchoking mechanism. This mechanism plays a crucial role in optimizing resource allocation within the P2P network.
