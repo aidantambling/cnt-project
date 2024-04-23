@@ -36,6 +36,7 @@ public class PeerConnectionManager {
     private Timer timer;
     public int unchokingInterval;
     public int optimisticUnchokingInterval;
+    public int optimisticUnchokedPeerId;
     public int numNeighbors;
     public boolean hasCompleteFile;
 
@@ -47,6 +48,7 @@ public class PeerConnectionManager {
         System.out.println("Initializing PCM");
         this.unchokingInterval = unchokingInterval;
         this.optimisticUnchokingInterval = optimisticUnchokingInterval;
+        this.optimisticUnchokedPeerId = -1;
         this.timer = new Timer();
         this.numNeighbors = numNeighbors;
         this.hasCompleteFile = false;
@@ -146,8 +148,36 @@ public class PeerConnectionManager {
         //TODO: handle optimistic choking
 
 //        logger.changedOptimisticNeighbor(xxxx);
+        //Handle optimistic choking
+        optimisticallyUnchokeNeighbor();
     }
 
+    public void optimisticallyUnchokeNeighbor() {
+        // If there are interested peers, select a random one to optimistically unchoke
+        List<Integer> interestedPeerIds = connections.values().stream()
+                .filter(ConnectionInfo::isInterested)
+                .map(conn -> conn.peerId)
+                .collect(Collectors.toList());
+
+        if (!interestedPeerIds.isEmpty()) {
+            // Select a random peer to optimistically unchoke
+            Random random = new Random();
+            int index = random.nextInt(interestedPeerIds.size());
+            optimisticUnchokedPeerId = interestedPeerIds.get(index);
+
+            logger.changedOptimisticNeighbor(optimisticUnchokedPeerId);
+
+            // Unchoke the selected peer
+            ConnectionInfo optimisticPeer = connections.get(optimisticUnchokedPeerId);
+            if (optimisticPeer != null) {
+                optimisticPeer.unchoke();
+                System.out.println("Optimistically unchoked peer: " + optimisticUnchokedPeerId);
+            }
+        } else {
+            // No interested peers, reset optimistic unchoked peer
+            optimisticUnchokedPeerId = -1;
+        }
+    }
 
     public void registerConnection(int peerId, boolean isClient) {
         connections.put(peerId, new ConnectionInfo(peerId, isClient));
