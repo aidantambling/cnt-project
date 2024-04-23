@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static java.lang.Thread.sleep;
 // Contains the "server" capabilities of a peer (uploading files to other peers)
 
 public class tcp_server
@@ -19,6 +21,8 @@ public class tcp_server
     ServerSocket server;
     private FileManager fileManager;
     private PeerConnectionManager connectionManager;
+    private volatile boolean keepRunning = true;
+
 //    Socket socket;
 
     public tcp_server(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager){
@@ -35,15 +39,38 @@ public class tcp_server
             System.out.println("Peer " + serverID + " has launched a TCP Server with port " + port);
             System.out.println("and IP " + local.getHostAddress() + " on peer " + serverID);
 
-            while (true) {
-                Socket clientSocket = server.accept();
-                System.out.println("Incoming connection detected from client");
-
-                new Thread(new ClientHandler(clientSocket)).start();
+            while (keepRunning) {
+                try {
+                    Socket clientSocket = server.accept();
+                    System.out.println("Incoming connection detected from client");
+                    new Thread(new ClientHandler(clientSocket)).start();
+                } catch (SocketException se) {
+                    if (!keepRunning) {
+                        System.out.println("Server socket was closed as part of server shutdown.");
+                        break;
+                    } else {
+                        throw se;
+                    }
+                } catch (SocketTimeoutException ste) {
+                    continue;
+                }
             }
         } catch (IOException i) {
             System.out.println("Error in connection with client or input detection");
+            i.printStackTrace();
             throw new RuntimeException(i);
+        }
+    }
+
+    public void stopServer() {
+        keepRunning = false;
+        System.out.println("Stopping server");
+        try {
+            if (server != null && !server.isClosed()) {
+                server.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Error closing server: " + e.getMessage());
         }
     }
 
@@ -103,8 +130,22 @@ public class tcp_server
                 boolean isChoked = true;
                 boolean areWeChoked = true;
                 boolean wait = false;
-                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     try {
+                        boolean[] currentBitfield = fileManager.getBitfield();
+                        for (int i = 0; i < currentBitfield.length; i++) {
+                            if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
+                                myBitfield[i] = true;
+                                sendHaveMessage(i); // send a have message to the other peers!
+                            }
+                        }
+
+                        if (connectionManager.disconnect){
+                            System.out.println("Preparing to disconnect from peer " + otherPeerID);
+                            sleep(8000);
+                            System.out.println("Disconnecting from peer " + otherPeerID);
+                            break;
+                        }
 
                         boolean newChoked = connectionManager.connections.get(otherPeerID).isChoked();
                         if (newChoked != isChoked) { // choke status for this thread was changed
@@ -114,14 +155,6 @@ public class tcp_server
                                 sendUnchokeMessage();
                             }
                             isChoked = newChoked;
-                        }
-
-                        boolean[] currentBitfield = fileManager.getBitfield();
-                        for (int i = 0; i < currentBitfield.length; i++) {
-                            if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
-                                myBitfield[i] = true;
-                                sendHaveMessage(i); // send a have message to the other peers!
-                            }
                         }
 
                         if (!areWeChoked && !wait) {
@@ -173,6 +206,15 @@ public class tcp_server
                                 // update bitfield
                                 int newBit = readHaveMessage(buffer.array());
                                 otherBitfield[newBit] = true;
+                                for (int i = 0; i < otherBitfield.length; i++) {
+                                    if (!otherBitfield[i]){
+                                        System.out.println(otherPeerID + " is missing bit " + i);
+                                        break;
+                                    }
+                                    if (i == otherBitfield.length - 1){
+                                        connectionManager.connections.get(otherPeerID).fileComplete = true; // the bitfield we got is complete - that file is complete.
+                                    }
+                                }
                                 if (!myBitfield[newBit]) { // if we don't have the new bit they got, send interested
                                     sendInterested();
                                 }
@@ -218,6 +260,8 @@ public class tcp_server
                         if (!connectionManager.connections.get(otherPeerID).isChoked()) {
 
                         }
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             } catch (IOException e) {
@@ -226,7 +270,12 @@ public class tcp_server
                 throw new RuntimeException(e);
             } finally {
                 try {
-                    clientSocket.close();
+                    if (socketInput != null) socketInput.close();
+                    if (socketOutput != null) socketOutput.close();
+                    if (clientSocket != null && !clientSocket.isClosed()){
+                        clientSocket.close();
+                    }
+                    stopServer();
                 } catch (IOException e) {
                     System.out.println("Error closing connection for client [" + clientSocket + "]");
                 }
@@ -336,10 +385,14 @@ public class tcp_server
                 bitfield[i] = bitfieldBytes[i] == 1;
             }
             System.out.println("Server: bitfield received from Peer " + otherPeerID + ": ");
-            for (boolean b : bitfield) {
-//                System.out.print(b ? "1" : "0");
+            for (int i = 0; i < bitfieldBytes.length; i++) {
+                if (!bitfield[i]){
+                    break;
+                }
+                if (i == bitfield.length - 1){
+                    connectionManager.connections.get(otherPeerID).fileComplete = true; // the bitfield we got is complete - that file is complete.
+                }
             }
-//            System.out.println();
 
             return bitfield;
         }

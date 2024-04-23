@@ -38,6 +38,8 @@ public class PeerConnectionManager {
     public int numNeighbors;
     public boolean hasCompleteFile;
 
+    public boolean disconnect = false;
+
     public PeerConnectionManager(int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors) {
         System.out.println("Initializing PCM");
         this.unchokingInterval = unchokingInterval;
@@ -77,15 +79,35 @@ public class PeerConnectionManager {
         public void run() {
             printConnections();
             manager.evaluatePeers();
-            manager.connections.values().forEach(conn -> {
-                if (conn.isChoked()) {
-                    // Send choke message
-                } else {
-                    // Send unchoke message
-                }
-            });
+            checkShutdown();
+//            manager.connections.values().forEach(conn -> {
+//                if (conn.isChoked()) {
+//                    // Send choke message
+//                } else {
+//                    // Send unchoke message
+//                }
+//            });
         }
     }
+
+    public void checkShutdown(){
+        boolean allDownloaded = true;
+        for (ConnectionInfo connection : connections.values()){
+            if (!connection.fileComplete){
+                allDownloaded = false;
+                break;
+            }
+        }
+
+        if (hasCompleteFile && allDownloaded && connections.values().size() > 1) { // this peer has the file, and so do the others
+            // we should gracefully disconnect all peers now.
+            System.out.println("All have been downloaded......");
+            disconnect = true;
+            this.timer.cancel();
+            this.timer.purge();
+        }
+    }
+
 
     public void evaluatePeers() {
         //TODO: servers/clients need to let PCM know their download rate.
@@ -167,6 +189,12 @@ public class PeerConnectionManager {
                 System.out.print( " server ");
             }
             System.out.println("And that connection is: " + (connection.isChoked ? "choked" : "unchoked"));
+
+            if (!connection.fileComplete){
+                System.out.println("Incomplete");
+            } else {
+                System.out.println("Complete");
+            }
         }
         System.out.println("**********************************************************");
     }
@@ -183,6 +211,7 @@ public class PeerConnectionManager {
         boolean isClient;
         boolean isChoked;
         boolean isInterested;
+        public boolean fileComplete;
 
         ConnectionInfo(int peerId, boolean isClient) {
             this.peerId = peerId;

@@ -18,13 +18,9 @@ public class peer {
   PeerConnectionManager connectionManager;
 
   // constructor to launch a peer object from peerProcess
-  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors){
+  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, int lastPeer){
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
-    System.out.println("Bitfield for peer " + PeerId);
-//    for (boolean b : bitfield){
-//      System.out.print(b);
-//    }
 
     this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors);
     if (fileManager.hasAllPieces()){
@@ -32,9 +28,21 @@ public class peer {
     }
 
     // Deploy the server-side
-    server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
-    Thread serverThread = new Thread(() -> server.launchServer());
-    serverThread.start();
+    System.out.println("LastPeer: " + lastPeer);
+    if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer (if PeerID != lastPeer)
+      server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
+
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        System.out.println("Calling shutdown hook");
+        if (server != null) {
+          server.stopServer();
+          System.out.println("Server shutdown successfully.");
+        }
+      }));
+
+      Thread serverThread = new Thread(() -> server.launchServer());
+      serverThread.start();
+    }
 
     // Deploy the client-side: attempt to connect to each of the other peers
     for (peerInfoParser.peerInfo p : peerInfoVector){
@@ -50,6 +58,7 @@ public class peer {
         System.out.println("Client: " + PeerId + " is connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);
       }
     }
+    System.out.println("Exiting peer");
   }
 
   public int getPeerId() {

@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Thread.sleep;
+
 // Contains the "client" capabilities of a peer (requesting / downloading files from other peers)
 public class tcp_client {
     int port;
@@ -111,8 +113,13 @@ public class tcp_client {
             bitfield[i] = bitfieldBytes[i] == 1;
         }
         System.out.println("Client: Bitfield received from Peer (ID = " + otherPeerID + "): ");
-        for (boolean b : bitfield) {
-//            System.out.print(b ? "1" : "0");
+        for (int i = 0; i < bitfieldBytes.length; i++) {
+            if (!bitfield[i]){
+                break;
+            }
+            if (i == bitfield.length - 1){
+                connectionManager.connections.get(otherPeerID).fileComplete = true; // the bitfield we got is complete - that file is complete.
+            }
         }
 //        System.out.println();
 
@@ -253,15 +260,22 @@ public class tcp_client {
             boolean isChoked = true;
             boolean areWeChoked = true;
             boolean wait = false;
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     boolean[] currentBitfield = fileManager.getBitfield();
                     for (int i = 0; i < currentBitfield.length; i++) {
                         if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
-                            System.out.println("SUSPICIOUS!");
+//                            System.out.println("SUSPICIOUS!");
                             myBitfield[i] = true;
                             sendHaveMessage(i); // send a have message to the other peers!
                         }
+                    }
+
+                    if (connectionManager.disconnect){
+                        System.out.println("Preparing to disconnect from peer " + otherPeerID);
+                        sleep(8000);
+                        System.out.println("Disconnecting from peer " + otherPeerID);
+                        break;
                     }
 
                     boolean newChoked = connectionManager.connections.get(otherPeerID).isChoked();
@@ -320,6 +334,14 @@ public class tcp_client {
                             // update bitfield
                             int newBit = readHaveMessage(buffer.array());
                             otherBitfield[newBit] = true;
+                            for (int i = 0; i < otherBitfield.length; i++) {
+                                if (!otherBitfield[i]){
+                                    break;
+                                }
+                                if (i == otherBitfield.length - 1){
+                                    connectionManager.connections.get(otherPeerID).fileComplete = true; // the bitfield we got is complete - that file is complete.
+                                }
+                            }
                             if (!myBitfield[newBit]) { // if we don't have the new bit they got, send interested
                                 sendInterested(); //TODO: ensure this works!!!! it works if 1001 and 1002 are launched before 1003, but not if all are launched concurrently.
                             }
@@ -356,6 +378,7 @@ public class tcp_client {
                             if (fileManager.hasAllPieces()) {
                                 System.out.println("Client: Bitfield is complete!!!!");
                                 fileManager.writeToFile();
+                                connectionManager.hasCompleteFile = true;
                             }
                         }
                     }
@@ -427,9 +450,9 @@ public class tcp_client {
         // terminate the connection
         System.out.println("Goodbye server! Closing connection.");
         try {
-            socketOutput.close();
-            socketInput.close();
-            requestSocket.close();
+            if (socketOutput != null)  socketOutput.close();
+            if (socketInput != null) socketInput.close();
+            if (requestSocket != null && !requestSocket.isClosed()) requestSocket.close();
         }
         catch (IOException e) {
             System.out.println("Error in disconnecting the client-server interface!");
