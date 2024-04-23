@@ -52,6 +52,7 @@ public class PeerConnectionManager {
         this.timer = new Timer();
         this.numNeighbors = numNeighbors;
         this.hasCompleteFile = false;
+        this.logger = logger;
         requestedPieces = ConcurrentHashMap.newKeySet();
 
         // schedule the recomputation task evey unchokingInterval seconds;
@@ -149,7 +150,7 @@ public class PeerConnectionManager {
 
 //        logger.changedOptimisticNeighbor(xxxx);
         //Handle optimistic choking
-        optimisticallyUnchokeNeighbor();
+//        optimisticallyUnchokeNeighbor();
     }
 
     public void optimisticallyUnchokeNeighbor() {

@@ -37,6 +37,7 @@ public class tcp_server
     }
 
     public void launchServer() {
+        System.out.println("Launch");
         try {
             server = new ServerSocket(port);
             InetAddress local = InetAddress.getLocalHost();

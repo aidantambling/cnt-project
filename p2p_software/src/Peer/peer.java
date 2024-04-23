@@ -50,6 +50,8 @@ public class peer {
 
     // Deploy the client-side: attempt to connect to each of the other peers
     for (peerInfoParser.peerInfo p : peerInfoVector){
+      System.out.println(p.getPeerId());
+      System.out.println(PeerId);
       if (p.getPeerId() == PeerId){
         break; // only attempt to connect to peers that precede this one (which will have already been launched)
       }
@@ -57,15 +59,15 @@ public class peer {
         int targetPeerPort = p.getPort();
         int targetPeerID = p.getPeerId();
         String targetPeerAddress = "localhost"; // hard-coded IP - change this
-        client = new tcp_client(targetPeerPort, targetPeerID, PeerId, fileManager, connectionManager, logger);
+        client = new tcp_client(targetPeerPort, PeerId, targetPeerID, fileManager, connectionManager, logger);
         Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
         clientThread.start();
         System.out.println("Client: " + PeerId + " is connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);
       }
     }
-    if (logger != null){
-      logger.shutdownLogger();
-    }
+//    if (logger != null){
+//      logger.shutdownLogger();
+//    }
     System.out.println("Exiting peer");
   }
 
