@@ -27,6 +27,9 @@ public class peer {
     }
 
     this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors);
+    if (fileManager.hasAllPieces()){
+      this.connectionManager.hasCompleteFile = true;
+    }
 
     // Deploy the server-side
     server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
