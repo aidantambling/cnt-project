@@ -1,6 +1,7 @@
 package tcpProcess;
 import Peer.FileManager;
 import Peer.Messages.Request;
+import Peer.PeerConnectionManager;
 
 import java.io.*;
 import java.net.*;
@@ -18,13 +19,15 @@ public class tcp_client {
     ObjectOutputStream socketOutput; // write to the socket
     ObjectInputStream socketInput; // read from the socket
     private FileManager fileManager;
+    private PeerConnectionManager connectionManager;
 
     ArrayList<Socket> sockets;
     Socket requestSocket;
-    public tcp_client(int port, int id, FileManager fileManager){
+    public tcp_client(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager){
         this.port = port;
         this.clientID = id;
         this.fileManager = fileManager;
+        this.connectionManager = connectionManager;
     }
 
     public void requestServer(String address, int port){
@@ -137,6 +140,11 @@ public class tcp_client {
         }
         System.out.println("Peer ID: " + extractedPeerID);
         otherPeerID = extractedPeerID;
+
+        // register connection with PCM
+        connectionManager.registerConnection(otherPeerID, true);
+        connectionManager.printConnections();
+
         return true;
     }
 

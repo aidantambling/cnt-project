@@ -15,9 +15,10 @@ public class peer {
 
   tcp_client client;
   tcp_server server;
+  PeerConnectionManager connectionManager;
 
   // constructor to launch a peer object from peerProcess
-  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager){
+  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors){
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
     System.out.println("Bitfield for peer " + PeerId);
@@ -25,8 +26,10 @@ public class peer {
       System.out.print(b);
     }
 
+    this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors);
+
     // Deploy the server-side
-    server = new tcp_server(peerPort, PeerId, fileManager);
+    server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
     Thread serverThread = new Thread(() -> server.launchServer());
     serverThread.start();
 
@@ -38,7 +41,7 @@ public class peer {
       else { // skip the current peer
         int targetPeerPort = p.getPort();
         String targetPeerAddress = "localhost"; // hard-coded IP - change this
-        client = new tcp_client(targetPeerPort, PeerId, fileManager);
+        client = new tcp_client(targetPeerPort, PeerId, fileManager, connectionManager);
         Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
         clientThread.start();
         System.out.println("Client: " + PeerId + " is connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);

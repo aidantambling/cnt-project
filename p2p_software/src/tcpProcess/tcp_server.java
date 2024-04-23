@@ -1,5 +1,6 @@
 package tcpProcess;
 import Peer.FileManager;
+import Peer.PeerConnectionManager;
 
 import java.net.*;
 import java.io.*;
@@ -15,12 +16,14 @@ public class tcp_server
     public int serverID;
     ServerSocket server;
     private FileManager fileManager;
+    private PeerConnectionManager connectionManager;
 //    Socket socket;
 
-    public tcp_server(int port, int id, FileManager fileManager){
+    public tcp_server(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager){
         this.port = port;
         this.serverID = id;
         this.fileManager = fileManager;
+        this.connectionManager = connectionManager;
     }
 
     public void launchServer() {
@@ -118,8 +121,6 @@ public class tcp_server
                         else if (messageType == 5){ // bitfield message
                             System.out.println("Bitfield message received.");
                             otherBitfield = receiveBitfield(buffer.array());
-                            //TODO: check the pieces this peer lacks, and send "interested" message
-                            // interested just indicates general interest in the other peer.
                             for (int i = 0; i < myBitfield.length; i++){
                                 if (!myBitfield[i] && otherBitfield[i]){ // other bitfield has a bit we lack...
 //                                Request request = new Request(i);
@@ -332,6 +333,11 @@ public class tcp_server
             System.out.println();
             System.out.println("Peer ID: " + extractedPeerID);
             this.otherPeerID = extractedPeerID;
+
+            // register connection with PCM
+            connectionManager.registerConnection(otherPeerID, false);
+            connectionManager.printConnections();
+
             return true;
         }
 
