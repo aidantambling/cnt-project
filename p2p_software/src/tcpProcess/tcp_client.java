@@ -216,7 +216,6 @@ public class tcp_client {
     }
 
     public int readHaveMessage(byte[] haveMessage){
-        System.out.println("Client attempting to read haveMessage");
         int pieceIndex = ByteBuffer.wrap(haveMessage, 1, 4).getInt();
         return pieceIndex;
     }
@@ -244,12 +243,12 @@ public class tcp_client {
                 readHandshake((byte[]) response);
             }
 
+            boolean[] myBitfield = Arrays.copyOf(fileManager.getBitfield(), fileManager.getBitfield().length);
             // send bitfield right after handshake
             sendBitfield(requestSocket);
             boolean[] otherBitfield = new boolean[0];
 
             // request missing pieces
-            boolean[] myBitfield = Arrays.copyOf(fileManager.getBitfield(), fileManager.getBitfield().length);
 
             boolean isChoked = true;
             boolean areWeChoked = true;
@@ -258,10 +257,9 @@ public class tcp_client {
                 try {
                     boolean[] currentBitfield = fileManager.getBitfield();
                     for (int i = 0; i < currentBitfield.length; i++) {
-//                        System.out.print("X");
                         if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
+                            System.out.println("SUSPICIOUS!");
                             myBitfield[i] = true;
-//                            System.out.println("Sending a message - we now have piece " + i); //TODO: i bet the error lies here- this isnt being printed so prob a logic error... so, the haveMsgs aren't sent and interest can only be expressed via bitMaps atm...
                             sendHaveMessage(i); // send a have message to the other peers!
                         }
                     }
@@ -321,11 +319,11 @@ public class tcp_client {
                         } else if (messageType == 4) { // have message
                             // update bitfield
                             int newBit = readHaveMessage(buffer.array());
-                            System.out.println("Client : " + otherPeerID + " has obtained a new bit: " + newBit);
                             otherBitfield[newBit] = true;
                             if (!myBitfield[newBit]) { // if we don't have the new bit they got, send interested
                                 sendInterested(); //TODO: ensure this works!!!! it works if 1001 and 1002 are launched before 1003, but not if all are launched concurrently.
                             }
+                            System.out.println("ClientHave: " + otherPeerID + " has a new piece at " + newBit + "!");
                         } else if (messageType == 5) { // bitfield message
                             otherBitfield = receiveBitfield(buffer.array());
                             for (int i = 0; i < myBitfield.length; i++) {
