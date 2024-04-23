@@ -34,7 +34,6 @@ public class peerInfoParser {
     public static ArrayList<peerInfo> peerInfoVector = new ArrayList<peerInfo>();
 
 
-    //this function make a map of variables to values
     private void parseConfigFile(String filePath) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
