@@ -86,7 +86,6 @@ public class PeerConnectionManager {
     }
 
     public void evaluatePeers() {
-        System.out.println("This peer is evaluating the other peers.");
         //TODO: servers/clients need to let PCM know their download rate.
         // based on the rate, we re-evaluate the c/uc connections
         List<ConnectionInfo> interestedPeers = connections.values().stream()
