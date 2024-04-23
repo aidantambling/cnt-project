@@ -1,5 +1,6 @@
 package Peer;
 import FileManager.peerInfoParser;
+import FileManager.Logger;
 import tcpProcess.tcp_client;
 import tcpProcess.tcp_server;
 
@@ -12,6 +13,7 @@ public class peer {
   private Socket socket;
   private boolean interest;
   private boolean[] bitfield;
+  private Logger logger;
 
   tcp_client client;
   tcp_server server;
@@ -22,15 +24,17 @@ public class peer {
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
 
-    this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors);
+
+    logger = new Logger(PeerId);
+
+    this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors, logger);
     if (fileManager.hasAllPieces()){
       this.connectionManager.hasCompleteFile = true;
     }
-
     // Deploy the server-side
     System.out.println("LastPeer: " + lastPeer);
     if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer (if PeerID != lastPeer)
-      server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
+      server = new tcp_server(peerPort, PeerId, fileManager, connectionManager, logger);
 
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("Calling shutdown hook");
@@ -51,12 +55,16 @@ public class peer {
       }
       else { // skip the current peer
         int targetPeerPort = p.getPort();
+        int targetPeerID = p.getPeerId();
         String targetPeerAddress = "localhost"; // hard-coded IP - change this
-        client = new tcp_client(targetPeerPort, PeerId, fileManager, connectionManager);
+        client = new tcp_client(targetPeerPort, targetPeerID, PeerId, fileManager, connectionManager, logger);
         Thread clientThread = new Thread(() -> client.requestServer(targetPeerAddress, targetPeerPort));
         clientThread.start();
         System.out.println("Client: " + PeerId + " is connecting to peer " + p.getPeerId() + " at " + targetPeerAddress + ":" + targetPeerPort);
       }
+    }
+    if (logger != null){
+      logger.shutdownLogger();
     }
     System.out.println("Exiting peer");
   }

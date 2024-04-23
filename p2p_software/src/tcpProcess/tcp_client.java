@@ -1,5 +1,6 @@
 package tcpProcess;
 import Peer.FileManager;
+import FileManager.Logger;
 import Peer.Messages.Request;
 import Peer.PeerConnectionManager;
 
@@ -8,13 +9,13 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static java.lang.Thread.sleep;
 
 // Contains the "client" capabilities of a peer (requesting / downloading files from other peers)
 public class tcp_client {
     int port;
+    int targetID;
     public int clientID;
 
     public int otherPeerID;
@@ -26,11 +27,14 @@ public class tcp_client {
 
     ArrayList<Socket> sockets;
     Socket requestSocket;
-    public tcp_client(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager){
+    Logger logger;
+    public tcp_client(int port, int id, int targetID, FileManager fileManager, PeerConnectionManager connectionManager, Logger logger){
         this.port = port;
         this.clientID = id;
         this.fileManager = fileManager;
         this.connectionManager = connectionManager;
+        this.logger = logger;
+        this.targetID = targetID;
     }
 
     public void requestServer(String address, int port){
@@ -45,6 +49,7 @@ public class tcp_client {
             this.requestSocket = new Socket(IP, port);
             System.out.println("Client-side socket established by peer " + clientID + " for " + IP.getHostAddress() + ":" + port);
             requestSocket.setSoTimeout(1500);
+            logger.makesTCPConnection(targetID);
 
             this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
             this.socketOutput.flush();
@@ -224,6 +229,7 @@ public class tcp_client {
 
     public int readHaveMessage(byte[] haveMessage){
         int pieceIndex = ByteBuffer.wrap(haveMessage, 1, 4).getInt();
+        logger.receivedHave(otherPeerID, pieceIndex);
         return pieceIndex;
     }
 
@@ -319,16 +325,20 @@ public class tcp_client {
                         byte messageType = buffer.get();
                         if (messageType == 0) { // choke message
                             System.out.println("Client: The other peer (" + otherPeerID + ") has choked us.");
+                            logger.receivedChoked(otherPeerID);
                             areWeChoked = true;
                         } else if (messageType == 1) { // unchoke message
                             System.out.println("Client: The other peer (" + otherPeerID + ") has unchoked us.");
+                            logger.receivedUnchoked(otherPeerID);
                             areWeChoked = false;
                         }
                         if (messageType == 2) {
                             System.out.println("Client :" + otherPeerID + " is indicating interest!");
+                            logger.receivedInterested(otherPeerID);
                             connectionManager.peerInterested(otherPeerID, true);
                         } else if (messageType == 3) {
                             System.out.println("Client: " + otherPeerID + " is not interested.");
+                            logger.receivedNotInterested(otherPeerID);
                             connectionManager.peerInterested(otherPeerID, false);
                         } else if (messageType == 4) { // have message
                             // update bitfield
@@ -369,6 +379,7 @@ public class tcp_client {
                             buffer.get(pieceData);
                             if (!fileManager.hasPiece(pieceIndex)) {
                                 fileManager.storePiece(pieceIndex, pieceData);
+                                logger.hasDownloaded(otherPeerID, pieceIndex);
                                 System.out.println("Client: Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
 //                                sendHaveMessage(pieceIndex);
                                 wait = false;
@@ -377,6 +388,7 @@ public class tcp_client {
                             }
                             if (fileManager.hasAllPieces()) {
                                 System.out.println("Client: Bitfield is complete!!!!");
+                                logger.downloadComplete();
                                 fileManager.writeToFile();
                                 connectionManager.hasCompleteFile = true;
                             }

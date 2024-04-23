@@ -8,7 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-
+import FileManager.Logger;
 
 public class PeerProcess {
 
@@ -94,6 +94,8 @@ public class PeerProcess {
             directoryPath = System.getProperty("user.dir") + File.separator + "peer_" + peerID;
             fileManager = new FileManager((int) configParser.getFileSize(), directoryPath, configParser.getFileName(), (int) configParser.getPieceSize()); // Alternative constructor for non-file-owners
         }
+
+//        Logger.initializeLogger(peerID);
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
         peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager, configParser.getUnchokingInterval(), configParser.getOptimisticUnchokingInterval(), configParser.getNumberOfPrefferedNeighbors(), peerParser.peerInfoVector.get(peerParser.peerInfoVector.size() - 1).getPeerId());

@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import FileManager.Logger;
+
 //TODO: check if the other peer (otherPeerID) is the "right neighbor"
 // choke and unchoke:
 // the peer uploads only to preferred neighbors (at most k of them) and an optimistically unchoked one
@@ -37,9 +39,11 @@ public class PeerConnectionManager {
     public int numNeighbors;
     public boolean hasCompleteFile;
 
+    public Logger logger;
+
     public boolean disconnect = false;
 
-    public PeerConnectionManager(int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors) {
+    public PeerConnectionManager(int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, Logger logger) {
         System.out.println("Initializing PCM");
         this.unchokingInterval = unchokingInterval;
         this.optimisticUnchokingInterval = optimisticUnchokingInterval;
@@ -120,12 +124,28 @@ public class PeerConnectionManager {
             interestedPeers.sort(Comparator.comparingLong(ConnectionInfo::getDownloadRate).reversed());
         }
 
-        interestedPeers.stream().limit(numNeighbors).forEach(ConnectionInfo::unchoke);
+        List<ConnectionInfo> preferredNeighbors = interestedPeers.stream()
+                .limit(numNeighbors).toList();
+
+        preferredNeighbors.forEach(ConnectionInfo::unchoke);
+
         if (interestedPeers.size() > numNeighbors) {
             interestedPeers.subList(numNeighbors, interestedPeers.size()).forEach(ConnectionInfo::choke);
         }
 
+        int[] preferredIds = preferredNeighbors.stream()
+                .mapToInt(ConnectionInfo::getPeerId)
+                .toArray();
+//        interestedPeers.stream().limit(numNeighbors).forEach(ConnectionInfo::unchoke);
+//        if (interestedPeers.size() > numNeighbors) {
+//            interestedPeers.subList(numNeighbors, interestedPeers.size()).forEach(ConnectionInfo::choke);
+//        }
+
+        logger.changedPrefferedNeighbors(preferredIds);
+
         //TODO: handle optimistic choking
+
+//        logger.changedOptimisticNeighbor(xxxx);
     }
 
 
@@ -218,6 +238,8 @@ public class PeerConnectionManager {
         public boolean isInterested(){
             return isInterested;
         }
+
+        public int getPeerId() { return peerId; }
 
     }
 

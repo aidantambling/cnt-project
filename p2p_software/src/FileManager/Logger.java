@@ -13,14 +13,13 @@ public class Logger {
      * predetermined in the project description.
      */
 
-    private static int myId;
+    private int myId;
     private static int numPieces = 0;
     private static File logFile;
-    private static BufferedWriter log;
+    private BufferedWriter log;
 
-    public static void initializeLogger (int peerId) {
+    public Logger(int peerId){
         myId = peerId;
-
         String logFileName = new File(System.getProperty("user.dir")).getParent() + "/log_peer_" + myId + ".log";
         logFile = new File(logFileName);
 
@@ -31,8 +30,21 @@ public class Logger {
         }
     }
 
+//    public static void initializeLogger (int peerId) {
+//
+//        String logFileName = new File(System.getProperty("user.dir")).getParent() + "/log_peer_" + myId + ".log";
+//        logFile = new File(logFileName);
+//
+//        try {
+//            log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(logFile)));
+//        } catch (Exception e) {
+//            System.err.println(e);
+//        }
+//    }
+
     // messages for tcp connections
-    public static void makesTCPConnection (int peerId) {
+    // client
+    public void makesTCPConnection (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " makes a connection to Peer " + peerId + ".";
         
@@ -46,7 +58,8 @@ public class Logger {
 
     }
 
-    public static void isConnected (int peerId) {
+    // server
+    public void isConnected (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " is connected from Peer " + peerId + ".";
         
@@ -62,7 +75,7 @@ public class Logger {
 
     // message for change of preffered neighbors
 
-    public static void changedPrefferedNeighbors (int[] peerId) {
+    public void changedPrefferedNeighbors (int[] peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " has the preferred neighbors ";
 
@@ -82,7 +95,7 @@ public class Logger {
 
     // message for change of optimistically unchoked neighbor
 
-    public static void changedOptimisticNeighbor (int peerId) {
+    public void changedOptimisticNeighbor (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " has the optimistically unchoked neighbor " + peerId + ".";
         
@@ -98,7 +111,7 @@ public class Logger {
 
     // message for unchoking
 
-    public static void receivedUnchoked (int peerId) {
+    public void receivedUnchoked (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " is unchoked by " + peerId + ".";
         
@@ -115,7 +128,7 @@ public class Logger {
 
     // message for choking
 
-    public static void receivedChoked (int peerId) {
+    public void receivedChoked (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " is choked by " + peerId + ".";
         
@@ -131,7 +144,7 @@ public class Logger {
 
     // receing a have message
 
-    public static void receivedHave (int peerId, int pieceIndex) {
+    public void receivedHave (int peerId, int pieceIndex) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " received the 'have' message from " + peerId + " for the piece " + pieceIndex + ".";
         
@@ -147,7 +160,7 @@ public class Logger {
 
     // receiving an interested message
 
-    public static void receivedInterested (int peerId) {
+    public void receivedInterested (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " received the 'interested' message from " + peerId +  ".";
         
@@ -163,7 +176,7 @@ public class Logger {
 
     // receiving a not interested message
 
-    public static void receivedNotInterested (int peerId) {
+    public void receivedNotInterested (int peerId) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " received the 'not interested' message from " + peerId +  ".";
         
@@ -179,7 +192,7 @@ public class Logger {
 
     // downloading a piece message
 
-    public static void hasDownloaded (int peerId, int pieceIndex) {
+    public void hasDownloaded (int peerId, int pieceIndex) {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " has downloaded the piece " + pieceIndex +  " from " + peerId + ".";
         numPieces++;
@@ -197,7 +210,7 @@ public class Logger {
 
     // download complete message
 
-    public static void downloadComplete () {
+    public void downloadComplete () {
         String date = new Date().toString();
         String line = date + ": Peer " + myId + " has downloaded the complete file.";
         
@@ -211,7 +224,7 @@ public class Logger {
 
     }
 
-    public static void shutdownLogger () {
+    public void shutdownLogger () {
         try {
             log.close();
         } catch (Exception e) {

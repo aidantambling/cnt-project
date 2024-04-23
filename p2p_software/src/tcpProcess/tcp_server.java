@@ -1,5 +1,6 @@
 package tcpProcess;
 import Peer.FileManager;
+import FileManager.Logger;
 import Peer.Messages.Request;
 import Peer.PeerConnectionManager;
 
@@ -23,13 +24,16 @@ public class tcp_server
     private PeerConnectionManager connectionManager;
     private volatile boolean keepRunning = true;
 
+    Logger logger;
+
 //    Socket socket;
 
-    public tcp_server(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager){
+    public tcp_server(int port, int id, FileManager fileManager, PeerConnectionManager connectionManager, Logger logger){
         this.port = port;
         this.serverID = id;
         this.fileManager = fileManager;
         this.connectionManager = connectionManager;
+        this.logger = logger;
     }
 
     public void launchServer() {
@@ -101,6 +105,8 @@ public class tcp_server
                 if (response instanceof byte[]){
                     readHandshake((byte[]) response);
                 }
+                logger.isConnected(otherPeerID);
+
 
                 //TODO: check if the other peer (otherPeerID) is the "right neighbor"
                 // choke and unchoke:
@@ -192,15 +198,19 @@ public class tcp_server
                             byte messageType = buffer.get();
                             if (messageType == 0) { // choke message
                                 System.out.println("Server: The other peer (" + otherPeerID + ") has choked us.");
+                                logger.receivedChoked(otherPeerID);
                                 areWeChoked = true;
                             } else if (messageType == 1) { // unchoke message
                                 System.out.println("Server: The other peer (" + otherPeerID + ") has unchoked us.");
+                                logger.receivedUnchoked(otherPeerID);
                                 areWeChoked = false;
                             } else if (messageType == 2) { // interested message
                                 System.out.println("Server: " + otherPeerID + " is indicating interest!");
+                                logger.receivedInterested(otherPeerID);
                                 connectionManager.peerInterested(otherPeerID, true);
                             } else if (messageType == 3) { // not-interested message
                                 System.out.println("Server: " + otherPeerID + " is not interested.");
+                                logger.receivedNotInterested(otherPeerID);
                                 connectionManager.peerInterested(otherPeerID, false);
                             } else if (messageType == 4) { // have message
                                 // update bitfield
@@ -241,6 +251,7 @@ public class tcp_server
                                 buffer.get(pieceData);
                                 if (!fileManager.hasPiece(pieceIndex)) {
                                     fileManager.storePiece(pieceIndex, pieceData);
+                                    logger.hasDownloaded(otherPeerID, pieceIndex);
                                     System.out.println("Server: Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
                                     // send "have" message to all connected peers.
 //                                    sendHaveMessage(pieceIndex);
@@ -250,6 +261,7 @@ public class tcp_server
                                 }
                                 if (fileManager.hasAllPieces()) {
                                     System.out.println("Server: Bitfield is complete!!!!");
+                                    logger.downloadComplete();
                                     fileManager.writeToFile();
                                 }
                             }
@@ -284,6 +296,7 @@ public class tcp_server
 
         public int readHaveMessage(byte[] haveMessage){
             int pieceIndex = ByteBuffer.wrap(haveMessage, 1, 4).getInt();
+            logger.receivedHave(otherPeerID, pieceIndex);
             return pieceIndex;
         }
 
