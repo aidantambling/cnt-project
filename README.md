@@ -25,40 +25,59 @@ A challenge of implementing this structure is that a peer manages some connectio
 - Nevertheless, the decision was made and it was decided to not revise the structure once the program depended on it too heavily. The program works as intended, it just could have been implemented with more foresight.
 
 ## tcp_client functions
-requestServer() - connect this client object to a given server
-sendHandshake() - send the server a handshake
-readHandshake() - receive the server's handshake
-sendBitfield() - send the server the bitfield
-receiveBitfield() - receive the server's bitfield
-booleanArrayToBytes() - helper function for encoding bitfield
-sendInterested() - send the server an interested message
-sendNotInterested() - send the server a not interested message
-sendHaveMessage() - send the server the index of a newly-received byte
-readHaveMessage() - read the server's index of newly-received byte
-sendChokeMessage() - choke the server
-sendUnchokeMessage() - unchoke the server
-handleIncomingRequests() - respond to a server's request
-sendPiece() - send an individual piece of data to the server
-maintainConnection() - operate a TCP connection with the server (event loop)
-closeClient() - terminate the connection
+- requestServer() - connect this client object to a given server
+- sendHandshake() - send the server a handshake
+- readHandshake() - receive the server's handshake
+- sendBitfield() - send the server the bitfield
+- receiveBitfield() - receive the server's bitfield
+- booleanArrayToBytes() - helper function for encoding bitfield
+- sendInterested() - send the server an interested message
+- sendNotInterested() - send the server a not interested message
+- sendHaveMessage() - send the server the index of a newly-received byte
+- readHaveMessage() - read the server's index of newly-received byte
+- sendChokeMessage() - choke the server
+- sendUnchokeMessage() - unchoke the server
+- handleIncomingRequests() - respond to a server's request
+- sendPiece() - send an individual piece of data to the server
+- maintainConnection() - operate a TCP connection with the server (event loop)
+- closeClient() - terminate the connection
 
 ## tcp_client functions
-launchServer() - await connection from a client
-sendHandshake() - send the client a handshake
-readHandshake() - receive the client's handshake
-sendBitfield() - send the client the bitfield
-receiveBitfield() - receive the client's bitfield
-booleanArrayToBytes() - helper function for encoding bitfield
-sendInterested() - send the client an interested message
-sendNotInterested() - send the client a not interested message
-sendHaveMessage() - send the client the index of a newly-received byte
-readHaveMessage() - read the client's index of newly-received byte
-sendChokeMessage() - choke the client
-sendUnchokeMessage() - unchoke the client
-handleIncomingRequests() - respond to a client's request
-sendPiece() - send an individual piece of data to the client
-run() - operate a TCP connection with the client (event loop)
-stopServer() - terminate the connection
+- launchServer() - await connection from a client
+- sendHandshake() - send the client a handshake
+- readHandshake() - receive the client's handshake
+- sendBitfield() - send the client the bitfield
+- receiveBitfield() - receive the client's bitfield
+- booleanArrayToBytes() - helper function for encoding bitfield
+- sendInterested() - send the client an interested message
+- sendNotInterested() - send the client a not interested message
+- sendHaveMessage() - send the client the index of a newly-received byte
+- readHaveMessage() - read the client's index of newly-received byte
+- sendChokeMessage() - choke the client
+- sendUnchokeMessage() - unchoke the client
+- handleIncomingRequests() - respond to a client's request
+- sendPiece() - send an individual piece of data to the client
+- run() - operate a TCP connection with the client (event loop)
+- stopServer() - terminate the connection
+
+## PeerConnectionManager functions
+- requestPiece() - track a peer's requested pieces so it doesn't request a duplicate
+- run() - use a timer to run periodic checks on the peer
+- checkShutdown() - determine if peers should disconnect (has everyone received the file)
+- evaluatePeers() - re-evaluate choked/unchoked peers
+- optimisticallyUnchokeNeighbor() - perform check on optimistically unchoking neighbor
+- registerConnection() - add a new connection for the manager to track
+- peerInterested() - indicate if a peer is interested in this one
+
+## FileManager functions
+- writeToFile() - when a peer has received all bytes, use them to create a file
+- loadFile() - read in a file's bytes to this peer (if it begins with the file)
+- hasPiece() - check if the peer has the piece (across any thread)
+- getPiece() - return a piece of the file
+- calculateNumPieces() - determine the number of fragments the file was split into
+- storePiece() - register that the peer has received a new piece
+- getBitfield() - return bitfield
+- hasAllPieces() - check if the peer has the entire file
 
 # Project Goal:
 
