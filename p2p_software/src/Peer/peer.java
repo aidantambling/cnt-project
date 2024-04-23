@@ -22,9 +22,9 @@ public class peer {
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
     System.out.println("Bitfield for peer " + PeerId);
-    for (boolean b : bitfield){
-      System.out.print(b);
-    }
+//    for (boolean b : bitfield){
+//      System.out.print(b);
+//    }
 
     this.connectionManager = new PeerConnectionManager(unchokingInterval, optimisticUnchokingInterval, numNeighbors);
     if (fileManager.hasAllPieces()){

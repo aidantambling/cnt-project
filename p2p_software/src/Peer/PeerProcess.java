@@ -48,7 +48,7 @@ public class PeerProcess {
         for (int i = 0; i < peerInfoParser.peerInfoVector.size(); i++){
             peerInfoParser.peerInfo p = peerInfoParser.peerInfoVector.get(i);
             if (peerID == p.getPeerId()){
-                System.out.println("Match found in PeerInfo.cfg - the peerID argument is valid");
+//                System.out.println("Match found in PeerInfo.cfg - the peerID argument is valid");
                 hostname = p.getHostName();
                 port = p.getPort();
                 hasFile = p.hasCompleteFile();
@@ -66,9 +66,8 @@ public class PeerProcess {
 
         // if peer has the file, it will just be a server
         if (hasFile) {
-            System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
+//            System.out.println("Peer " + peerID + " with complete file listening on port " + port + " for incoming connections.");
             // we need to load the file's data into this program so we can distribute it to the other peers
-            // TODO: do something to bitfield
             directoryPath = System.getProperty("user.dir") + File.separator + "peer_" + peerID;
             try {
                 File directory = new File(directoryPath);

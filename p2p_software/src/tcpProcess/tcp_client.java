@@ -42,7 +42,7 @@ public class tcp_client {
         try {
             this.requestSocket = new Socket(IP, port);
             System.out.println("Client-side socket established by peer " + clientID + " for " + IP.getHostAddress() + ":" + port);
-            requestSocket.setSoTimeout(5000);
+            requestSocket.setSoTimeout(1500);
 
             this.socketOutput = new ObjectOutputStream(this.requestSocket.getOutputStream());
             this.socketOutput.flush();
@@ -97,7 +97,7 @@ public class tcp_client {
             buffer.put(bitfieldAsBytes);
             socketOutput.writeObject(buffer.array());
             socketOutput.flush();
-            System.out.println("Bitfield has been sent.");
+            System.out.println("Client: Bitfield has been sent.");
         } catch (IOException e) {
             System.out.println("Failed to send bitfield: " + e.getMessage());
             throw new RuntimeException(e);
@@ -110,11 +110,11 @@ public class tcp_client {
         for (int i = 0; i < bitfieldBytes.length; i++) {
             bitfield[i] = bitfieldBytes[i] == 1;
         }
-        System.out.println("Bitfield received from Peer (ID = " + otherPeerID + "): ");
+        System.out.println("Client: Bitfield received from Peer (ID = " + otherPeerID + "): ");
         for (boolean b : bitfield) {
-            System.out.print(b ? "1" : "0");
+//            System.out.print(b ? "1" : "0");
         }
-        System.out.println();
+//        System.out.println();
 
         return bitfield;
     }
@@ -140,7 +140,7 @@ public class tcp_client {
             return false;
         }
         else {
-            System.out.println("Header: " + header);
+//            System.out.println("Header: " + header);
         }
 
         System.out.println("Zero bytes: ");
@@ -149,9 +149,9 @@ public class tcp_client {
                 System.out.println("A zero byte was transmitted incorrectly.");
                 return false;
             }
-            System.out.print(b);
+//            System.out.print(b);
         }
-        System.out.println("Handshake received from Peer with ID: " + extractedPeerID);
+        System.out.println("Client: " + clientID + " received handshake from Peer: " + extractedPeerID);
         otherPeerID = extractedPeerID;
 
         // register connection with PCM
@@ -192,13 +192,14 @@ public class tcp_client {
 //    }
 
     public void sendInterested() throws IOException {
-        System.out.println("Expressing interest in " + otherPeerID);
+        System.out.println("Client: Expressing interest in " + otherPeerID);
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.put((byte) 2); // interested code
         socketOutput.writeObject(buffer.array());
         socketOutput.flush();
     }
     public void sendNotInterested() throws IOException {
+        System.out.println("Client: Expressing NO interest in " + otherPeerID);
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.put((byte) 3); // interested code
         socketOutput.writeObject(buffer.array());
@@ -206,7 +207,7 @@ public class tcp_client {
     }
 
     public void sendHaveMessage(int index) throws IOException {
-        System.out.println("Client sending have message for " + index);
+        System.out.println("Client sending have message for " + index + " to " + otherPeerID);
         ByteBuffer buffer = ByteBuffer.allocate(5);
         buffer.put((byte) 4);
         buffer.putInt(index);
@@ -221,12 +222,14 @@ public class tcp_client {
     }
 
     public void sendChokeMessage() throws IOException {
+        System.out.println("Client: Sending choke message to " + otherPeerID);
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.put((byte) 0); // choke code
         socketOutput.writeObject(buffer.array());
         socketOutput.flush();
     }
     public void sendUnchokeMessage() throws IOException {
+        System.out.println("Client: Sending unchoke message to " + otherPeerID);
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.put((byte) 1); // choke code
         socketOutput.writeObject(buffer.array());
@@ -246,19 +249,19 @@ public class tcp_client {
             boolean[] otherBitfield = new boolean[0];
 
             // request missing pieces
-            boolean[] myBitfield = fileManager.getBitfield();
+            boolean[] myBitfield = Arrays.copyOf(fileManager.getBitfield(), fileManager.getBitfield().length);
 
             boolean isChoked = true;
             boolean areWeChoked = true;
             boolean wait = false;
             while (true) {
                 try {
-//                System.out.println("Looping");
                     boolean[] currentBitfield = fileManager.getBitfield();
                     for (int i = 0; i < currentBitfield.length; i++) {
+//                        System.out.print("X");
                         if (currentBitfield[i] && !myBitfield[i]) { // the fileManager's bitfield is different (i.e., some thread obtain a new byte)
                             myBitfield[i] = true;
-                            System.out.println("Sending a message - we now have piece " + i); //TODO: i bet the error lies here- this isnt being printed so prob a logic error... so, the haveMsgs aren't sent and interest can only be expressed via bitMaps atm...
+//                            System.out.println("Sending a message - we now have piece " + i); //TODO: i bet the error lies here- this isnt being printed so prob a logic error... so, the haveMsgs aren't sent and interest can only be expressed via bitMaps atm...
                             sendHaveMessage(i); // send a have message to the other peers!
                         }
                     }
@@ -303,37 +306,36 @@ public class tcp_client {
                         ByteBuffer buffer = ByteBuffer.wrap((byte[]) response);
                         byte messageType = buffer.get();
                         if (messageType == 0) { // choke message
-                            System.out.println("The other peer has choked us.");
+                            System.out.println("Client: The other peer (" + otherPeerID + ") has choked us.");
                             areWeChoked = true;
                         } else if (messageType == 1) { // unchoke message
-                            System.out.println("The other peer has unchoked us.");
+                            System.out.println("Client: The other peer (" + otherPeerID + ") has unchoked us.");
                             areWeChoked = false;
                         }
                         if (messageType == 2) {
-                            System.out.println(otherPeerID + " is indicating interest!");
+                            System.out.println("Client :" + otherPeerID + " is indicating interest!");
                             connectionManager.peerInterested(otherPeerID, true);
                         } else if (messageType == 3) {
-                            System.out.println(otherPeerID + " is not interested.");
+                            System.out.println("Client: " + otherPeerID + " is not interested.");
                             connectionManager.peerInterested(otherPeerID, false);
                         } else if (messageType == 4) { // have message
                             // update bitfield
                             int newBit = readHaveMessage(buffer.array());
-                            System.out.println(otherPeerID + " has obtained a new bit: " + newBit);
+                            System.out.println("Client : " + otherPeerID + " has obtained a new bit: " + newBit);
                             otherBitfield[newBit] = true;
                             if (!myBitfield[newBit]) { // if we don't have the new bit they got, send interested
                                 sendInterested(); //TODO: ensure this works!!!! it works if 1001 and 1002 are launched before 1003, but not if all are launched concurrently.
                             }
                         } else if (messageType == 5) { // bitfield message
-                            System.out.println("Bitfield message received.");
                             otherBitfield = receiveBitfield(buffer.array());
                             for (int i = 0; i < myBitfield.length; i++) {
                                 if (!myBitfield[i] && otherBitfield[i]) { // other bitfield has a bit we lack...
-                                    System.out.println("Indicating interest in piece from peer " + otherPeerID + ": " + i);
+                                    System.out.println("Client: Indicating interest in piece from peer " + otherPeerID + ": " + i);
                                     sendInterested();
                                     break;
                                 }
                                 if (i == myBitfield.length - 1) { // we have checked every bit from the other bitfield, and we need none...
-                                    System.out.println("Indicating a lack of interest to peer " + otherPeerID);
+                                    System.out.println("Client: Indicating a lack of interest to peer " + otherPeerID);
                                     sendNotInterested();
                                 }
                             }
@@ -348,13 +350,13 @@ public class tcp_client {
                             if (!fileManager.hasPiece(pieceIndex)) {
                                 fileManager.storePiece(pieceIndex, pieceData);
                                 System.out.println("Client: Received and stored piece index: " + pieceIndex + " with length: " + pieceData.length + " - " + otherPeerID);
-                                sendHaveMessage(pieceIndex);
+//                                sendHaveMessage(pieceIndex);
                                 wait = false;
                             } else {
                                 System.out.println("We already have piece at index: " + pieceIndex + " - client for peer " + otherPeerID);
                             }
                             if (fileManager.hasAllPieces()) {
-                                System.out.println("Bitfield is complete!!!!");
+                                System.out.println("Client: Bitfield is complete!!!!");
                                 fileManager.writeToFile();
                             }
                         }

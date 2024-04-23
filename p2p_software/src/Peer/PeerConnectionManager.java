@@ -128,6 +128,7 @@ public class PeerConnectionManager {
     }
 
     public void printConnections(){
+        System.out.println("**********************************************************");
         System.out.println("This peer's connections: ");
         for (Integer id : connections.keySet()) {
             ConnectionInfo connection = connections.get(id);
@@ -140,6 +141,7 @@ public class PeerConnectionManager {
             }
             System.out.println("And that connection is: " + (connection.isChoked ? "choked" : "unchoked"));
         }
+        System.out.println("**********************************************************");
     }
 
     private boolean someConditionBasedOn(ConnectionInfo connInfo) {
@@ -160,7 +162,7 @@ public class PeerConnectionManager {
             this.downloadedBytes = 0;
             this.lastTimeChecked = System.currentTimeMillis();
             this.isClient = isClient;
-            this.isChoked = true;
+            this.isChoked = false;
             this.isInterested = false;
         }
 
@@ -177,7 +179,7 @@ public class PeerConnectionManager {
         }
 
         public void choke(){
-            this.isChoked = true;
+            this.isChoked = false;
         }
 
         public void unchoke(){
