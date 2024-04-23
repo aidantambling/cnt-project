@@ -40,21 +40,24 @@ public class tcp_server
             System.out.println("and IP " + local.getHostAddress() + " on peer " + serverID);
 
             while (keepRunning) {
-                if (server.isClosed()){
-                    break;
-                }
                 try {
                     Socket clientSocket = server.accept();
                     System.out.println("Incoming connection detected from client");
-
                     new Thread(new ClientHandler(clientSocket)).start();
-                } catch (SocketTimeoutException e){
+                } catch (SocketException se) {
+                    if (!keepRunning) {
+                        System.out.println("Server socket was closed as part of server shutdown.");
+                        break;
+                    } else {
+                        throw se;
+                    }
+                } catch (SocketTimeoutException ste) {
                     continue;
                 }
-
             }
         } catch (IOException i) {
             System.out.println("Error in connection with client or input detection");
+            i.printStackTrace();
             throw new RuntimeException(i);
         }
     }
@@ -272,6 +275,7 @@ public class tcp_server
                     if (clientSocket != null && !clientSocket.isClosed()){
                         clientSocket.close();
                     }
+                    stopServer();
                 } catch (IOException e) {
                     System.out.println("Error closing connection for client [" + clientSocket + "]");
                 }

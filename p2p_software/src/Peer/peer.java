@@ -28,18 +28,20 @@ public class peer {
     }
 
     // Deploy the server-side
-    server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
+    if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer
+      server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
 
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      System.out.println("Calling shutdown hook");
-      if (server != null) {
-        server.stopServer();
-        System.out.println("Server shutdown successfully.");
-      }
-    }));
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        System.out.println("Calling shutdown hook");
+        if (server != null) {
+          server.stopServer();
+          System.out.println("Server shutdown successfully.");
+        }
+      }));
 
-    Thread serverThread = new Thread(() -> server.launchServer());
-    serverThread.start();
+      Thread serverThread = new Thread(() -> server.launchServer());
+      serverThread.start();
+    }
 
     // Deploy the client-side: attempt to connect to each of the other peers
     for (peerInfoParser.peerInfo p : peerInfoVector){
