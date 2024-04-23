@@ -18,7 +18,7 @@ public class peer {
   PeerConnectionManager connectionManager;
 
   // constructor to launch a peer object from peerProcess
-  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors){
+  peer (int PeerId, int peerPort, ArrayList<peerInfoParser.peerInfo> peerInfoVector, FileManager fileManager, int unchokingInterval, int optimisticUnchokingInterval, int numNeighbors, int lastPeer){
     System.out.println("Creating peer with peerID: " + PeerId);
     bitfield = fileManager.getBitfield();
 
@@ -28,7 +28,8 @@ public class peer {
     }
 
     // Deploy the server-side
-    if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer
+    System.out.println("LastPeer: " + lastPeer);
+    if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer (if PeerID != lastPeer)
       server = new tcp_server(peerPort, PeerId, fileManager, connectionManager);
 
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {

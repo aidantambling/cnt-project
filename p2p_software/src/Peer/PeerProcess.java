@@ -35,9 +35,6 @@ public class PeerProcess {
         peerInfoParser peerParser = new peerInfoParser();
         peerParser.readFile();
 
-        ArrayList<peer> peers = new ArrayList<peer>();
-        byte[] bitField = {0, 0, 0, 0, 0, 0, 0};
-
         // launch the peer we are targeting
         int peerID = Integer.parseInt(args[0]);
 
@@ -99,7 +96,7 @@ public class PeerProcess {
         }
 
         // regardless of if the peer is a client / server, it should use threads to connect tto the other peers.
-        peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager, configParser.getUnchokingInterval(), configParser.getOptimisticUnchokingInterval(), configParser.getNumberOfPrefferedNeighbors());
+        peer = new peer(peerID, port, peerInfoParser.peerInfoVector, fileManager, configParser.getUnchokingInterval(), configParser.getOptimisticUnchokingInterval(), configParser.getNumberOfPrefferedNeighbors(), peerParser.peerInfoVector.get(peerParser.peerInfoVector.size() - 1).getPeerId());
 
         //TODO: begin server functioning
 
