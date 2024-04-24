@@ -26,8 +26,8 @@ public class peer {
       this.connectionManager.hasCompleteFile = true;
     }
     // Deploy the server-side
-    System.out.println("LastPeer: " + lastPeer);
-    if (PeerId < 1003){ // don't deploy 1003 TODO: don't deploy server for last peer (if PeerID != lastPeer)
+//    System.out.println("LastPeer: " + lastPeer);
+    if (PeerId < lastPeer){ // don't deploy 1003 TODO: don't deploy server for last peer (if PeerID != lastPeer)
       server = new tcp_server(peerPort, PeerId, fileManager, connectionManager, logger);
 
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -44,8 +44,8 @@ public class peer {
 
     // Deploy the client-side: attempt to connect to each of the other peers
     for (peerInfoParser.peerInfo p : peerInfoVector){
-      System.out.println(p.getPeerId());
-      System.out.println(PeerId);
+//      System.out.println(p.getPeerId());
+//      System.out.println(PeerId);
       if (p.getPeerId() == PeerId){
         break; // only attempt to connect to peers that precede this one (which will have already been launched)
       }
@@ -62,7 +62,7 @@ public class peer {
 //    if (logger != null){
 //      logger.shutdownLogger();
 //    }
-    System.out.println("Exiting peer");
+//    System.out.println("Exiting peer");
   }
 
   public int getPeerId() {

@@ -39,7 +39,13 @@ public class PeerProcess {
                 hostname = p.getHostName();
                 port = p.getPort();
                 hasFile = p.hasCompleteFile();
-                System.out.println(port + " " + hasFile);
+//                System.out.println(port + " " + hasFile);
+                System.out.println("*******************************************");
+                System.out.println("PeerID: " + peerID);
+                System.out.println("Peer Hostname: " + hostname);
+                System.out.println("Peer Port: " + port);
+                System.out.println("HasFile: " + hasFile);
+                System.out.println("*******************************************");
                 break;
             }
             if (i == peerInfoParser.peerInfoVector.size() - 1){
@@ -58,7 +64,7 @@ public class PeerProcess {
             directoryPath = System.getProperty("user.dir") + File.separator + "peer_" + peerID;
             try {
                 File directory = new File(directoryPath);
-                System.out.println(directory.getAbsolutePath());
+//                System.out.println(directory.getAbsolutePath());
                 File[] files = directory.listFiles();
                 File target;
                 if (files != null && files.length > 0){

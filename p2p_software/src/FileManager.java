@@ -18,7 +18,7 @@ public class FileManager {
         this.filename = filename;
         this.pieceSize = pieceSize;
         this.file = new File(filePath);
-        System.out.println(this.pieceSize);
+//        System.out.println(this.pieceSize);
         if (file.exists() && file.isFile()) {
             loadFile();
             System.out.println("This peer has read in the file.");

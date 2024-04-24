@@ -31,7 +31,7 @@ public class tcp_server
     }
 
     public void launchServer() {
-        System.out.println("Launch");
+//        System.out.println("Launch");
         try {
             server = new ServerSocket(port);
             InetAddress local = InetAddress.getLocalHost();
@@ -263,7 +263,7 @@ public class tcp_server
                         }
                     }  catch (SocketTimeoutException ste) {
                         // Log and handle timeout
-                        System.out.println("Read timed out, checking connection status...");
+//                        System.out.println("Read timed out, checking connection status...");
                         if (!connectionManager.connections.get(otherPeerID).isChoked()) {
 
                         }

@@ -80,7 +80,7 @@ public class PeerConnectionManager {
         }
 
         public void run() {
-            printConnections();
+//            printConnections();
             manager.evaluatePeers();
             checkShutdown();
 //            manager.connections.values().forEach(conn -> {

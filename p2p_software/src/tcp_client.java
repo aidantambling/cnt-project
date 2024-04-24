@@ -149,7 +149,7 @@ public class tcp_client {
 //            System.out.println("Header: " + header);
         }
 
-        System.out.println("Zero bytes: ");
+//        System.out.println("Zero bytes: ");
         for (byte b : zeroBytes){
             if (b != 0){
                 System.out.println("A zero byte was transmitted incorrectly.");
@@ -401,7 +401,7 @@ public class tcp_client {
 //                    }
                 } catch (SocketTimeoutException ste) {
                     // Log and handle timeout
-                    System.out.println("Read timed out, checking connection status...");
+//                    System.out.println("Read timed out, checking connection status...");
                     if (!connectionManager.connections.get(otherPeerID).isChoked()) {
 
                     }

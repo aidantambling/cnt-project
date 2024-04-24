@@ -33,6 +33,7 @@ public class peerInfoParser {
 
 
     private void parseConfigFile(String filePath) throws IOException {
+        System.out.println("Reading PeerInfo.cfg");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -49,7 +50,10 @@ public class peerInfoParser {
 //                System.out.println(parts[3] + " " + Boolean.parseBoolean(parts[3]));
                 peerInfo.hasFile = "1".equals(parts[3]);
 
-//                System.out.println(peerInfo.PeerId + " " + peerInfo.HostName + " " + peerInfo.port + " " + peerInfo.hasFile);
+//                System.out.println("PeerID: " + peerInfo.PeerId);
+//                System.out.println("Peer Hostname: " + peerInfo.HostName);
+//                System.out.println("Peer Port: " + peerInfo.port);
+//                System.out.println("HasFile: " + peerInfo.hasFile);
 
                 peerInfoVector.add(peerInfo);
             }
