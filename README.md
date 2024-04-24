@@ -6,13 +6,17 @@ This project involves building a Peer-to-Peer (P2P) file sharing application sim
 
 # Individual Contributions
 
-Aidan Tambling: peerProcesses, peer data structure, communication between threads
-Fredderick Blanco: Logging, peer data structure, configuration parsing
-Gabriel Hunter Turmail: Optimistic unchoking
+- Aidan Tambling: peerProcesses, peer data structure, communication between threads
+- Fredderick Blanco: Logging, peer data structure, configuration parsing
+- Gabriel Hunter Turmail: Optimistic unchoking, message structures
 
 # How to Run the Project
 
-XYZ
+(Note: PeerInfo.cfg and Config.cfg must be supplied. The amount of peers in PeerInfo.cfg is the amount that must, together, have the file for the program to terminate. Also, a directory must be provided inside of src for each peer (e.g. peer_1001, peer_1002), etc. and if PeerInfo.cfg specifies that a given peer has a file, that peer directory must contain the file.)
+1. Ensure you have at least Java version 11 installed
+2. Navigate terminal to p2p_software/src
+3. Run make to compile the program
+4. Start a peer from the src directory using "java PeerProcess #" where # is replaced by the peerID
 
 # Details About Implemented Protocols
 
