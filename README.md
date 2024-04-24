@@ -8,11 +8,14 @@ This project involves building a Peer-to-Peer (P2P) file sharing application sim
 
 Aidan Tambling: peerProcesses, peer data structure, communication between threads
 Fredderick Blanco: Logging, peer data structure, configuration parsing
-Gabriel Hunter Turmail: Optimistic unchoking
+Gabriel Hunter Turmail: Optimistic unchoking, message structures
 
 # How to Run the Project
 
-XYZ
+1. Ensure you have at least Java version 11 installed
+2. Navigate terminal to p2p_software/src
+3. Run make to compile the program
+4. Start a peer from the src directory using "java PeerProcess #" where # is replaced by the peerID
 
 # Details About Implemented Protocols
 

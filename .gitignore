@@ -2,3 +2,4 @@
 p2p_software/src/FileManager/configParser.class
 p2p_software/src/FileManager/Logger.class
 *.class
+p2p_software/src/log_peer_1001.log
