@@ -125,7 +125,8 @@ public class PeerConnectionManager {
             interestedPeers.sort(Comparator.comparingLong(ConnectionInfo::getDownloadRate).reversed());
         }
 
-        List<ConnectionInfo> preferredNeighbors = interestedPeers.stream().limit(numNeighbors).collect(Collectors.toList());
+        List<ConnectionInfo> preferredNeighbors = interestedPeers.stream()
+                .limit(numNeighbors).collect(Collectors.toList());
 
         preferredNeighbors.forEach(ConnectionInfo::unchoke);
 
