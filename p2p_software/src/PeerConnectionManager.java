@@ -49,7 +49,7 @@ public class PeerConnectionManager {
         this.timer = new Timer();
         this.numNeighbors = numNeighbors;
         this.hasCompleteFile = false;
-        this.numPeers = 4; // TODO: determines number of peers that must have downloaded file before peers will disconnect. In general, should be set to numPeers.
+        this.numPeers = numPeers; // TODO: determines number of peers that must have downloaded file before peers will disconnect. In general, should be set to numPeers.
         this.logger = logger;
         requestedPieces = ConcurrentHashMap.newKeySet();
 
