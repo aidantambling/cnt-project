@@ -1,10 +1,6 @@
-package Peer;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import FileManager.Logger;
 
 //TODO: check if the other peer (otherPeerID) is the "right neighbor"
 // choke and unchoke:
@@ -129,8 +125,7 @@ public class PeerConnectionManager {
             interestedPeers.sort(Comparator.comparingLong(ConnectionInfo::getDownloadRate).reversed());
         }
 
-        List<ConnectionInfo> preferredNeighbors = interestedPeers.stream()
-                .limit(numNeighbors).toList();
+        List<ConnectionInfo> preferredNeighbors = interestedPeers.stream().limit(numNeighbors).collect(Collectors.toList());
 
         preferredNeighbors.forEach(ConnectionInfo::unchoke);
 
@@ -138,9 +133,7 @@ public class PeerConnectionManager {
             interestedPeers.subList(numNeighbors, interestedPeers.size()).forEach(ConnectionInfo::choke);
         }
 
-        int[] preferredIds = preferredNeighbors.stream()
-                .mapToInt(ConnectionInfo::getPeerId)
-                .toArray();
+        int[] preferredIds = preferredNeighbors.stream().mapToInt(ConnectionInfo::getPeerId).toArray();
 //        interestedPeers.stream().limit(numNeighbors).forEach(ConnectionInfo::unchoke);
 //        if (interestedPeers.size() > numNeighbors) {
 //            interestedPeers.subList(numNeighbors, interestedPeers.size()).forEach(ConnectionInfo::choke);
@@ -157,10 +150,7 @@ public class PeerConnectionManager {
 
     public void optimisticallyUnchokeNeighbor() {
         // If there are interested peers, select a random one to optimistically unchoke
-        List<Integer> interestedPeerIds = connections.values().stream()
-                .filter(ConnectionInfo::isInterested)
-                .map(conn -> conn.peerId)
-                .collect(Collectors.toList());
+        List<Integer> interestedPeerIds = connections.values().stream().filter(ConnectionInfo::isInterested).map(conn -> conn.peerId).collect(Collectors.toList());
 
         if (!interestedPeerIds.isEmpty()) {
             // Select a random peer to optimistically unchoke

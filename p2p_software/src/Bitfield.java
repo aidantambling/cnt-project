@@ -1,5 +1,3 @@
-package Peer.Messages;
-
 public class Bitfield implements Message {
     private static final byte MESSAGE_TYPE = 5;
     private byte[] bitfield;

@@ -1,5 +1,3 @@
-package Peer.Messages;
-
 public class Request implements Message {
     private static final byte MESSAGE_TYPE = 6;
     private int pieceIndex;

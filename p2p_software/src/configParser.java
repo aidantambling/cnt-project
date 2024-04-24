@@ -1,5 +1,3 @@
-package FileManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -40,7 +38,7 @@ public class configParser {
 
     //file path is hard coded this must be changed later
     public void readFile() throws IOException {
-        String filePath = System.getProperty("user.dir") + File.separator + "configs" + File.separator + "Common.cfg";
+        String filePath = System.getProperty("user.dir") + File.separator + "Common.cfg";
         configMap = parseConfigFile(filePath);
     }
 

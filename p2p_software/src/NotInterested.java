@@ -1,5 +1,3 @@
-package Peer.Messages;
-
 public class NotInterested implements Message {
     private static final byte MESSAGE_TYPE = 3;
 

@@ -1,5 +1,3 @@
-package FileManager;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,7 +18,7 @@ public class Logger {
 
     public Logger(int peerId){
         myId = peerId;
-        String logFileName = new File(System.getProperty("user.dir")).getParent() + "/log_peer_" + myId + ".log";
+        String logFileName = new File(System.getProperty("user.dir")) + "/log_peer_" + myId + ".log";
         logFile = new File(logFileName);
 
         try {

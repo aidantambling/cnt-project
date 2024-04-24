@@ -1,5 +1,3 @@
-package Peer.Messages;
-
 public class Choke implements Message {
     private static final byte MESSAGE_TYPE = 0;
 

@@ -1,7 +1,3 @@
-package Peer;
-
-import Peer.Messages.*;
-
 public class ClientMessageParser {
 
     public static Message parseClientMessage(byte[] messageBytes) throws IllegalArgumentException {

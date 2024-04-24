@@ -1,5 +1,3 @@
-package FileManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -61,7 +59,7 @@ public class peerInfoParser {
 
     //for now file path is hardcoded this must be changed later
     public void readFile() throws IOException {
-        String filePath = System.getProperty("user.dir") + File.separator + "configs" + File.separator + "PeerInfo.cfg";
+        String filePath = System.getProperty("user.dir") + File.separator + "PeerInfo.cfg";
         parseConfigFile(filePath);
     }
 }

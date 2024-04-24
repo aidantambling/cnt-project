@@ -1,5 +1,3 @@
-package Peer.Messages;
-
 public class Unchoke implements Message {
     private static final byte MESSAGE_TYPE = 1;
 
