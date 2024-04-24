@@ -128,7 +128,7 @@ public class PeerConnectionManager {
         }
 
         List<ConnectionInfo> preferredNeighbors = interestedPeers.stream()
-                .limit(numNeighbors).toList();
+                .limit(numNeighbors).collect(Collectors.toList());
 
         preferredNeighbors.forEach(ConnectionInfo::unchoke);
 
